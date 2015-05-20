@@ -2469,11 +2469,13 @@ Strophe.Connection.prototype = {
         });
 
         if (this._sasl_mechanism.isClientFirst) {
-          var response = this._sasl_mechanism.onChallenge(this, null);
-          request_auth_exchange.t(Base64.encode(response));
+          var response = this._sasl_mechanism.onChallenge(this, null, function(err, response) { // jshint ignore:line
+            request_auth_exchange.t(Base64.encode(response));
+            this.send(request_auth_exchange.tree());
+          }); // jshint ignore:line
+        } else {
+          this.send(request_auth_exchange.tree());
         }
-
-        this.send(request_auth_exchange.tree());
 
         mechanism_found = true;
         break;
@@ -2507,15 +2509,15 @@ Strophe.Connection.prototype = {
 
     _sasl_challenge_cb: function(elem) {
       var challenge = Base64.decode(Strophe.getText(elem));
-      var response = this._sasl_mechanism.onChallenge(this, challenge);
-
-      var stanza = $build('response', {
+      this._sasl_mechanism.onChallenge(this, challenge, function(err, response) {
+        var stanza = $build('response', {
           xmlns: Strophe.NS.SASL
+        });
+        if (response !== "") {
+          stanza.t(Base64.encode(response));
+        }
+        this.send(stanza.tree());
       });
-      if (response !== "") {
-        stanza.t(Base64.encode(response));
-      }
-      this.send(stanza.tree());
 
       return true;
     },
@@ -3028,7 +3030,7 @@ Strophe.SASLMechanism.prototype = {
    *    (String) Mechanism response.
    */
   /* jshint unused:false */
-  onChallenge: function(connection, challenge) {
+  onChallenge: function(connection, challenge, callback) {
     throw new Error("You should implement challenge handling!");
   },
   /* jshint unused:true */
@@ -3083,13 +3085,13 @@ Strophe.SASLPlain.test = function(connection) {
   return connection.authcid !== null;
 };
 
-Strophe.SASLPlain.prototype.onChallenge = function(connection) {
+Strophe.SASLPlain.prototype.onChallenge = function(connection, challenge, callback) {
   var auth_str = connection.authzid;
   auth_str = auth_str + "\u0000";
   auth_str = auth_str + connection.authcid;
   auth_str = auth_str + "\u0000";
   auth_str = auth_str + connection.pass;
-  return auth_str;
+  callback(null, auth_str);
 };
 
 Strophe.Connection.prototype.mechanisms[Strophe.SASLPlain.prototype.name] = Strophe.SASLPlain;
@@ -3097,7 +3099,9 @@ Strophe.Connection.prototype.mechanisms[Strophe.SASLPlain.prototype.name] = Stro
 /** PrivateConstructor: SASLSHA1
  *  SASL SCRAM SHA 1 authentication.
  */
-Strophe.SASLSHA1 = function() {};
+Strophe.SASLSHA1 = function() {
+  this.firstChallengeDone = false;
+};
 
 /* TEST:
  * This is a simple example of a SCRAM-SHA-1 authentication exchange
@@ -3119,41 +3123,46 @@ Strophe.SASLSHA1.test = function(connection) {
   return connection.authcid !== null;
 };
 
-Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce) {
-  var cnonce = test_cnonce || MD5.hexdigest(Math.random() * 1234567890);
+Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+  var cnonce;
 
-  var auth_str = "n=" + connection.authcid;
-  auth_str += ",r=";
-  auth_str += cnonce;
+  if (!this.firstChallengeDone) {
+    cnonce = test_cnonce || MD5.hexdigest(Math.random() * 1234567890);
 
-  connection._sasl_data.cnonce = cnonce;
-  connection._sasl_data["client-first-message-bare"] = auth_str;
+    var auth_str = "n=" + connection.authcid;
+    auth_str += ",r=";
+    auth_str += cnonce;
 
-  auth_str = "n,," + auth_str;
+    connection._sasl_data.cnonce = cnonce;
+    connection._sasl_data["client-first-message-bare"] = auth_str;
 
-  this.onChallenge = function (connection, challenge)
-  {
-    var nonce, salt, iter, Hi, U, U_old, i, k;
-    var clientKey, serverKey, clientSignature;
+    auth_str = "n,," + auth_str;
+
+    this.firstChallengeDone = true;
+
+    return auth_str;
+  } else {
+
+    var nonce, salt, iter;
     var responseText = "c=biws,";
     var authMessage = connection._sasl_data["client-first-message-bare"] + "," +
-      challenge + ",";
-    var cnonce = connection._sasl_data.cnonce;
+        challenge + ",";
+    cnonce = connection._sasl_data.cnonce;
     var attribMatch = /([a-z]+)=([^,]+)(,|$)/;
 
     while (challenge.match(attribMatch)) {
       var matches = challenge.match(attribMatch);
       challenge = challenge.replace(matches[0], "");
       switch (matches[1]) {
-      case "r":
-        nonce = matches[2];
-        break;
-      case "s":
-        salt = matches[2];
-        break;
-      case "i":
-        iter = matches[2];
-        break;
+        case "r":
+          nonce = matches[2];
+          break;
+        case "s":
+          salt = matches[2];
+          break;
+        case "i":
+          iter = matches[2];
+          break;
       }
     }
 
@@ -3168,33 +3177,47 @@ Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cn
     salt = Base64.decode(salt);
     salt += "\x00\x00\x00\x01";
 
-    Hi = U_old = SHA1.core_hmac_sha1(connection.pass, salt);
-    for (i = 1; i < iter; i++) {
-      U = SHA1.core_hmac_sha1(connection.pass, SHA1.binb2str(U_old));
-      for (k = 0; k < 5; k++) {
-        Hi[k] ^= U[k];
-      }
-      U_old = U;
-    }
-    Hi = SHA1.binb2str(Hi);
-
-    clientKey = SHA1.core_hmac_sha1(Hi, "Client Key");
-    serverKey = SHA1.str_hmac_sha1(Hi, "Server Key");
-    clientSignature = SHA1.core_hmac_sha1(SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
-    connection._sasl_data["server-signature"] = SHA1.b64_hmac_sha1(serverKey, authMessage);
-
-    for (k = 0; k < 5; k++) {
-      clientKey[k] ^= clientSignature[k];
-    }
-
-    responseText += ",p=" + Base64.encode(SHA1.binb2str(clientKey));
-
-    return responseText;
-  }.bind(this);
-
-  return auth_str;
+    // Push the SHA1 source to the worker context and make the computations in the background.
+    this.computeChallenge(SH1Source, iter, connection.pass, authMessage, salt,
+        function(err, clientKey, serverSignature) {
+      connection._sasl_data["server-signature"] = serverSignature;
+      responseText += ",p=" + Base64.encode(clientKey);
+      callback(null, responseText);
+    });
+  }
 };
 
+Strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectionPass, authMessage, salt, callback) {
+  // no shared context between calls to the worker
+  // creates SH1 namespace in the worker's context
+  eval(depsCode); // jshint ignore:line
+  var Hi, U, U_old, i, k;
+  var clientKey, serverKey, clientSignature;
+
+  Hi = U_old = SHA1.core_hmac_sha1(connectionPass, salt);
+  for (i = 1; i < iter; i++) {
+    U = SHA1.core_hmac_sha1(connectionPass, SHA1.binb2str(U_old));
+    for (k = 0; k < 5; k++) {
+      Hi[k] ^= U[k];
+    }
+    U_old = U;
+  }
+  Hi = SHA1.binb2str(Hi);
+
+  clientKey = SHA1.core_hmac_sha1(Hi, "Client Key");
+  serverKey = SHA1.str_hmac_sha1(Hi, "Server Key");
+  clientSignature = SHA1.core_hmac_sha1(SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
+  var serverSignature = SHA1.b64_hmac_sha1(serverKey, authMessage);
+
+  for (k = 0; k < 5; k++) {
+    clientKey[k] ^= clientSignature[k];
+  }
+
+  callback(null, SHA1.binb2str(clientKey), serverSignature);
+};
+
+// Wrap it in a worker
+Strophe.SASLSHA1.prototype.computeChallenge = operative(Strophe.SASLSHA1.prototype.computeChallenge);
 Strophe.Connection.prototype.mechanisms[Strophe.SASLSHA1.prototype.name] = Strophe.SASLSHA1;
 
 /** PrivateConstructor: SASLMD5
@@ -3224,7 +3247,11 @@ Strophe.SASLMD5.prototype._quote = function (str)
   };
 
 
-Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce) {
+Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+  if (test_cnonce instanceof Function) {
+    callback = test_cnonce;
+    test_cnonce = null;
+  }
   var attribMatch = /([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)/;
   var cnonce = test_cnonce || MD5.hexdigest("" + (Math.random() * 1234567890));
   var realm = "";
@@ -3278,12 +3305,12 @@ Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cno
                                               MD5.hexdigest(A2)) + ",";
   responseText += 'qop=auth';
 
-  this.onChallenge = function ()
+  this.onChallenge = function (connection, challenge, test_cnonce, callback)
   {
-      return "";
-  }.bind(this);
+    callback(null, "");
+  };
 
-  return responseText;
+  callback(null, responseText);
 };
 
 Strophe.Connection.prototype.mechanisms[Strophe.SASLMD5.prototype.name] = Strophe.SASLMD5;

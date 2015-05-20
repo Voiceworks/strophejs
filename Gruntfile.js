@@ -42,7 +42,9 @@ module.exports = function(grunt){
 
         concat: {
             dist: {
-                src: ['src/wrap_header.js', 'src/base64.js', 'src/sha1.js', 'src/md5.js', 'src/polyfills.js', 'src/core.js', 'src/bosh.js', 'src/websocket.js', 'src/wrap_footer.js'],
+                src: ['node_modules/operative/dist/operative.min.js', 'src/wrap_header.js', 'src/base64.js',
+                    'src/sha1.js', 'src/md5.js', 'src/polyfills.js', 'src/core.js', 'src/bosh.js', 'src/websocket.js',
+                    'src/wrap_footer.js'],
                 dest: '<%= pkg.name %>'
             },
             options: {
@@ -75,6 +77,12 @@ module.exports = function(grunt){
 
         jshint: {
             files: ['Gruntfile.js', 'src/*.js'],
+            options: {
+                globals: {
+                    operative: true,
+                    SH1Source: true
+                }
+            }
         },
 
         shell: {

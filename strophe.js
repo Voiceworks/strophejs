@@ -1,3 +1,5 @@
+/*! promise-polyfill 2.0.1 */
+!function(a){function b(a,b){return function(){a.apply(b,arguments)}}function c(a){if("object"!=typeof this)throw new TypeError("Promises must be constructed via new");if("function"!=typeof a)throw new TypeError("not a function");this._state=null,this._value=null,this._deferreds=[],i(a,b(e,this),b(f,this))}function d(a){var b=this;return null===this._state?void this._deferreds.push(a):void j(function(){var c=b._state?a.onFulfilled:a.onRejected;if(null===c)return void(b._state?a.resolve:a.reject)(b._value);var d;try{d=c(b._value)}catch(e){return void a.reject(e)}a.resolve(d)})}function e(a){try{if(a===this)throw new TypeError("A promise cannot be resolved with itself.");if(a&&("object"==typeof a||"function"==typeof a)){var c=a.then;if("function"==typeof c)return void i(b(c,a),b(e,this),b(f,this))}this._state=!0,this._value=a,g.call(this)}catch(d){f.call(this,d)}}function f(a){this._state=!1,this._value=a,g.call(this)}function g(){for(var a=0,b=this._deferreds.length;b>a;a++)d.call(this,this._deferreds[a]);this._deferreds=null}function h(a,b,c,d){this.onFulfilled="function"==typeof a?a:null,this.onRejected="function"==typeof b?b:null,this.resolve=c,this.reject=d}function i(a,b,c){var d=!1;try{a(function(a){d||(d=!0,b(a))},function(a){d||(d=!0,c(a))})}catch(e){if(d)return;d=!0,c(e)}}var j=c.immediateFn||"function"==typeof setImmediate&&setImmediate||function(a){setTimeout(a,1)},k=Array.isArray||function(a){return"[object Array]"===Object.prototype.toString.call(a)};c.prototype["catch"]=function(a){return this.then(null,a)},c.prototype.then=function(a,b){var e=this;return new c(function(c,f){d.call(e,new h(a,b,c,f))})},c.all=function(){var a=Array.prototype.slice.call(1===arguments.length&&k(arguments[0])?arguments[0]:arguments);return new c(function(b,c){function d(f,g){try{if(g&&("object"==typeof g||"function"==typeof g)){var h=g.then;if("function"==typeof h)return void h.call(g,function(a){d(f,a)},c)}a[f]=g,0===--e&&b(a)}catch(i){c(i)}}if(0===a.length)return b([]);for(var e=a.length,f=0;f<a.length;f++)d(f,a[f])})},c.resolve=function(a){return a&&"object"==typeof a&&a.constructor===c?a:new c(function(b){b(a)})},c.reject=function(a){return new c(function(b,c){c(a)})},c.race=function(a){return new c(function(b,c){for(var d=0,e=a.length;e>d;d++)a[d].then(b,c)})},"undefined"!=typeof module&&module.exports?module.exports=c:a.Promise||(a.Promise=c)}(this);
 /** File: strophe.js
  *  A JavaScript library for XMPP BOSH/XMPP over Websocket.
  *
@@ -121,192 +123,8 @@
  * See http://pajhome.org.uk/crypt/md5 for details.
  */
 
-/* jshint undef: true, unused: true:, noarg: true, latedef: true */
-/* global define */
-
-/* Some functions and variables have been stripped for use with Strophe */
-
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define('strophe-sha1', function () {
-            return factory();
-        });
-    } else {
-        // Browser globals
-        root.SHA1 = factory();
-    }
-}(this, function () {
-
-/*
- * Calculate the SHA-1 of an array of big-endian words, and a bit length
- */
-function core_sha1(x, len)
-{
-  /* append padding */
-  x[len >> 5] |= 0x80 << (24 - len % 32);
-  x[((len + 64 >> 9) << 4) + 15] = len;
-
-  var w = new Array(80);
-  var a =  1732584193;
-  var b = -271733879;
-  var c = -1732584194;
-  var d =  271733878;
-  var e = -1009589776;
-
-  var i, j, t, olda, oldb, oldc, oldd, olde;
-  for (i = 0; i < x.length; i += 16)
-  {
-    olda = a;
-    oldb = b;
-    oldc = c;
-    oldd = d;
-    olde = e;
-
-    for (j = 0; j < 80; j++)
-    {
-      if (j < 16) { w[j] = x[i + j]; }
-      else { w[j] = rol(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16], 1); }
-      t = safe_add(safe_add(rol(a, 5), sha1_ft(j, b, c, d)),
-                       safe_add(safe_add(e, w[j]), sha1_kt(j)));
-      e = d;
-      d = c;
-      c = rol(b, 30);
-      b = a;
-      a = t;
-    }
-
-    a = safe_add(a, olda);
-    b = safe_add(b, oldb);
-    c = safe_add(c, oldc);
-    d = safe_add(d, oldd);
-    e = safe_add(e, olde);
-  }
-  return [a, b, c, d, e];
-}
-
-/*
- * Perform the appropriate triplet combination function for the current
- * iteration
- */
-function sha1_ft(t, b, c, d)
-{
-  if (t < 20) { return (b & c) | ((~b) & d); }
-  if (t < 40) { return b ^ c ^ d; }
-  if (t < 60) { return (b & c) | (b & d) | (c & d); }
-  return b ^ c ^ d;
-}
-
-/*
- * Determine the appropriate additive constant for the current iteration
- */
-function sha1_kt(t)
-{
-  return (t < 20) ?  1518500249 : (t < 40) ?  1859775393 :
-         (t < 60) ? -1894007588 : -899497514;
-}
-
-/*
- * Calculate the HMAC-SHA1 of a key and some data
- */
-function core_hmac_sha1(key, data)
-{
-  var bkey = str2binb(key);
-  if (bkey.length > 16) { bkey = core_sha1(bkey, key.length * 8); }
-
-  var ipad = new Array(16), opad = new Array(16);
-  for (var i = 0; i < 16; i++)
-  {
-    ipad[i] = bkey[i] ^ 0x36363636;
-    opad[i] = bkey[i] ^ 0x5C5C5C5C;
-  }
-
-  var hash = core_sha1(ipad.concat(str2binb(data)), 512 + data.length * 8);
-  return core_sha1(opad.concat(hash), 512 + 160);
-}
-
-/*
- * Add integers, wrapping at 2^32. This uses 16-bit operations internally
- * to work around bugs in some JS interpreters.
- */
-function safe_add(x, y)
-{
-  var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-  var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-  return (msw << 16) | (lsw & 0xFFFF);
-}
-
-/*
- * Bitwise rotate a 32-bit number to the left.
- */
-function rol(num, cnt)
-{
-  return (num << cnt) | (num >>> (32 - cnt));
-}
-
-/*
- * Convert an 8-bit or 16-bit string to an array of big-endian words
- * In 8-bit function, characters >255 have their hi-byte silently ignored.
- */
-function str2binb(str)
-{
-  var bin = [];
-  var mask = 255;
-  for (var i = 0; i < str.length * 8; i += 8)
-  {
-    bin[i>>5] |= (str.charCodeAt(i / 8) & mask) << (24 - i%32);
-  }
-  return bin;
-}
-
-/*
- * Convert an array of big-endian words to a string
- */
-function binb2str(bin)
-{
-  var str = "";
-  var mask = 255;
-  for (var i = 0; i < bin.length * 32; i += 8)
-  {
-    str += String.fromCharCode((bin[i>>5] >>> (24 - i%32)) & mask);
-  }
-  return str;
-}
-
-/*
- * Convert an array of big-endian words to a base-64 string
- */
-function binb2b64(binarray)
-{
-  var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  var str = "";
-  var triplet, j;
-  for (var i = 0; i < binarray.length * 4; i += 3)
-  {
-    triplet = (((binarray[i   >> 2] >> 8 * (3 -  i   %4)) & 0xFF) << 16) |
-              (((binarray[i+1 >> 2] >> 8 * (3 - (i+1)%4)) & 0xFF) << 8 ) |
-               ((binarray[i+2 >> 2] >> 8 * (3 - (i+2)%4)) & 0xFF);
-    for (j = 0; j < 4; j++)
-    {
-      if (i * 8 + j * 6 > binarray.length * 32) { str += "="; }
-      else { str += tab.charAt((triplet >> 6*(3-j)) & 0x3F); }
-    }
-  }
-  return str;
-}
-
-/*
- * These are the functions you'll usually want to call
- * They take string arguments and return either hex or base-64 encoded strings
- */
-return {
-    b64_hmac_sha1:  function (key, data){ return binb2b64(core_hmac_sha1(key, data)); },
-    b64_sha1:       function (s) { return binb2b64(core_sha1(str2binb(s),s.length * 8)); },
-    binb2str:       binb2str,
-    core_hmac_sha1: core_hmac_sha1,
-    str_hmac_sha1:  function (key, data){ return binb2str(core_hmac_sha1(key, data)); },
-    str_sha1:       function (s) { return binb2str(core_sha1(str2binb(s),s.length * 8)); },
-};
-}));
+// this is far from perfect
+var SH1Source = '!function(a,b){"function"==typeof define&&define.amd?define("strophe-sha1",function(){return b()}):a.SHA1=b()}(this,function(){function a(a,d){a[d>>5]|=128<<24-d%32,a[(d+64>>9<<4)+15]=d;var m,n,o,p,q,r,s,t,g=new Array(80),h=1732584193,i=-271733879,j=-1732584194,k=271733878,l=-1009589776;for(m=0;m<a.length;m+=16){for(p=h,q=i,r=j,s=k,t=l,n=0;80>n;n++)g[n]=16>n?a[m+n]:f(g[n-3]^g[n-8]^g[n-14]^g[n-16],1),o=e(e(f(h,5),b(n,i,j,k)),e(e(l,g[n]),c(n))),l=k,k=j,j=f(i,30),i=h,h=o;h=e(h,p),i=e(i,q),j=e(j,r),k=e(k,s),l=e(l,t)}return[h,i,j,k,l]}function b(a,b,c,d){return 20>a?b&c|~b&d:40>a?b^c^d:60>a?b&c|b&d|c&d:b^c^d}function c(a){return 20>a?1518500249:40>a?1859775393:60>a?-1894007588:-899497514}function d(b,c){var d=g(b);d.length>16&&(d=a(d,8*b.length));for(var e=new Array(16),f=new Array(16),h=0;16>h;h++)e[h]=909522486^d[h],f[h]=1549556828^d[h];var i=a(e.concat(g(c)),512+8*c.length);return a(f.concat(i),672)}function e(a,b){var c=(65535&a)+(65535&b),d=(a>>16)+(b>>16)+(c>>16);return d<<16|65535&c}function f(a,b){return a<<b|a>>>32-b}function g(a){for(var b=[],c=255,d=0;d<8*a.length;d+=8)b[d>>5]|=(a.charCodeAt(d/8)&c)<<24-d%32;return b}function h(a){for(var b="",c=255,d=0;d<32*a.length;d+=8)b+=String.fromCharCode(a[d>>5]>>>24-d%32&c);return b}function i(a){for(var d,e,b="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",c="",f=0;f<4*a.length;f+=3)for(d=(255&a[f>>2]>>8*(3-f%4))<<16|(255&a[f+1>>2]>>8*(3-(f+1)%4))<<8|255&a[f+2>>2]>>8*(3-(f+2)%4),e=0;4>e;e++)c+=8*f+6*e>32*a.length?"=":b.charAt(63&d>>6*(3-e));return c}return{b64_hmac_sha1:function(a,b){return i(d(a,b))},b64_sha1:function(b){return i(a(g(b),8*b.length))},binb2str:h,core_hmac_sha1:d,str_hmac_sha1:function(a,b){return h(d(a,b))},str_sha1:function(b){return h(a(g(b),8*b.length))}}});';
 
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -3085,11 +2903,13 @@ Strophe.Connection.prototype = {
         });
 
         if (this._sasl_mechanism.isClientFirst) {
-          var response = this._sasl_mechanism.onChallenge(this, null);
-          request_auth_exchange.t(Base64.encode(response));
+          var response = this._sasl_mechanism.onChallenge(this, null, function(err, response) { // jshint ignore:line
+            request_auth_exchange.t(Base64.encode(response));
+            this.send(request_auth_exchange.tree());
+          }); // jshint ignore:line
+        } else {
+          this.send(request_auth_exchange.tree());
         }
-
-        this.send(request_auth_exchange.tree());
 
         mechanism_found = true;
         break;
@@ -3123,15 +2943,15 @@ Strophe.Connection.prototype = {
 
     _sasl_challenge_cb: function(elem) {
       var challenge = Base64.decode(Strophe.getText(elem));
-      var response = this._sasl_mechanism.onChallenge(this, challenge);
-
-      var stanza = $build('response', {
+      this._sasl_mechanism.onChallenge(this, challenge, function(err, response) {
+        var stanza = $build('response', {
           xmlns: Strophe.NS.SASL
+        });
+        if (response !== "") {
+          stanza.t(Base64.encode(response));
+        }
+        this.send(stanza.tree());
       });
-      if (response !== "") {
-        stanza.t(Base64.encode(response));
-      }
-      this.send(stanza.tree());
 
       return true;
     },
@@ -3644,7 +3464,7 @@ Strophe.SASLMechanism.prototype = {
    *    (String) Mechanism response.
    */
   /* jshint unused:false */
-  onChallenge: function(connection, challenge) {
+  onChallenge: function(connection, challenge, callback) {
     throw new Error("You should implement challenge handling!");
   },
   /* jshint unused:true */
@@ -3699,13 +3519,13 @@ Strophe.SASLPlain.test = function(connection) {
   return connection.authcid !== null;
 };
 
-Strophe.SASLPlain.prototype.onChallenge = function(connection) {
+Strophe.SASLPlain.prototype.onChallenge = function(connection, challenge, callback) {
   var auth_str = connection.authzid;
   auth_str = auth_str + "\u0000";
   auth_str = auth_str + connection.authcid;
   auth_str = auth_str + "\u0000";
   auth_str = auth_str + connection.pass;
-  return auth_str;
+  callback(null, auth_str);
 };
 
 Strophe.Connection.prototype.mechanisms[Strophe.SASLPlain.prototype.name] = Strophe.SASLPlain;
@@ -3713,7 +3533,9 @@ Strophe.Connection.prototype.mechanisms[Strophe.SASLPlain.prototype.name] = Stro
 /** PrivateConstructor: SASLSHA1
  *  SASL SCRAM SHA 1 authentication.
  */
-Strophe.SASLSHA1 = function() {};
+Strophe.SASLSHA1 = function() {
+  this.firstChallengeDone = false;
+};
 
 /* TEST:
  * This is a simple example of a SCRAM-SHA-1 authentication exchange
@@ -3735,41 +3557,46 @@ Strophe.SASLSHA1.test = function(connection) {
   return connection.authcid !== null;
 };
 
-Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce) {
-  var cnonce = test_cnonce || MD5.hexdigest(Math.random() * 1234567890);
+Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+  var cnonce;
 
-  var auth_str = "n=" + connection.authcid;
-  auth_str += ",r=";
-  auth_str += cnonce;
+  if (!this.firstChallengeDone) {
+    cnonce = test_cnonce || MD5.hexdigest(Math.random() * 1234567890);
 
-  connection._sasl_data.cnonce = cnonce;
-  connection._sasl_data["client-first-message-bare"] = auth_str;
+    var auth_str = "n=" + connection.authcid;
+    auth_str += ",r=";
+    auth_str += cnonce;
 
-  auth_str = "n,," + auth_str;
+    connection._sasl_data.cnonce = cnonce;
+    connection._sasl_data["client-first-message-bare"] = auth_str;
 
-  this.onChallenge = function (connection, challenge)
-  {
-    var nonce, salt, iter, Hi, U, U_old, i, k;
-    var clientKey, serverKey, clientSignature;
+    auth_str = "n,," + auth_str;
+
+    this.firstChallengeDone = true;
+
+    return auth_str;
+  } else {
+
+    var nonce, salt, iter;
     var responseText = "c=biws,";
     var authMessage = connection._sasl_data["client-first-message-bare"] + "," +
-      challenge + ",";
-    var cnonce = connection._sasl_data.cnonce;
+        challenge + ",";
+    cnonce = connection._sasl_data.cnonce;
     var attribMatch = /([a-z]+)=([^,]+)(,|$)/;
 
     while (challenge.match(attribMatch)) {
       var matches = challenge.match(attribMatch);
       challenge = challenge.replace(matches[0], "");
       switch (matches[1]) {
-      case "r":
-        nonce = matches[2];
-        break;
-      case "s":
-        salt = matches[2];
-        break;
-      case "i":
-        iter = matches[2];
-        break;
+        case "r":
+          nonce = matches[2];
+          break;
+        case "s":
+          salt = matches[2];
+          break;
+        case "i":
+          iter = matches[2];
+          break;
       }
     }
 
@@ -3784,33 +3611,47 @@ Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cn
     salt = Base64.decode(salt);
     salt += "\x00\x00\x00\x01";
 
-    Hi = U_old = SHA1.core_hmac_sha1(connection.pass, salt);
-    for (i = 1; i < iter; i++) {
-      U = SHA1.core_hmac_sha1(connection.pass, SHA1.binb2str(U_old));
-      for (k = 0; k < 5; k++) {
-        Hi[k] ^= U[k];
-      }
-      U_old = U;
-    }
-    Hi = SHA1.binb2str(Hi);
-
-    clientKey = SHA1.core_hmac_sha1(Hi, "Client Key");
-    serverKey = SHA1.str_hmac_sha1(Hi, "Server Key");
-    clientSignature = SHA1.core_hmac_sha1(SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
-    connection._sasl_data["server-signature"] = SHA1.b64_hmac_sha1(serverKey, authMessage);
-
-    for (k = 0; k < 5; k++) {
-      clientKey[k] ^= clientSignature[k];
-    }
-
-    responseText += ",p=" + Base64.encode(SHA1.binb2str(clientKey));
-
-    return responseText;
-  }.bind(this);
-
-  return auth_str;
+    // Push the SHA1 source to the worker context and make the computations in the background.
+    this.computeChallenge(SH1Source, iter, connection.pass, authMessage, salt,
+        function(err, clientKey, serverSignature) {
+      connection._sasl_data["server-signature"] = serverSignature;
+      responseText += ",p=" + Base64.encode(clientKey);
+      callback(null, responseText);
+    });
+  }
 };
 
+Strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectionPass, authMessage, salt, callback) {
+  // no shared context between calls to the worker
+  // creates SH1 namespace in the worker's context
+  eval(depsCode); // jshint ignore:line
+  var Hi, U, U_old, i, k;
+  var clientKey, serverKey, clientSignature;
+
+  Hi = U_old = SHA1.core_hmac_sha1(connectionPass, salt);
+  for (i = 1; i < iter; i++) {
+    U = SHA1.core_hmac_sha1(connectionPass, SHA1.binb2str(U_old));
+    for (k = 0; k < 5; k++) {
+      Hi[k] ^= U[k];
+    }
+    U_old = U;
+  }
+  Hi = SHA1.binb2str(Hi);
+
+  clientKey = SHA1.core_hmac_sha1(Hi, "Client Key");
+  serverKey = SHA1.str_hmac_sha1(Hi, "Server Key");
+  clientSignature = SHA1.core_hmac_sha1(SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
+  var serverSignature = SHA1.b64_hmac_sha1(serverKey, authMessage);
+
+  for (k = 0; k < 5; k++) {
+    clientKey[k] ^= clientSignature[k];
+  }
+
+  callback(null, SHA1.binb2str(clientKey), serverSignature);
+};
+
+// Wrap it in a worker
+Strophe.SASLSHA1.prototype.computeChallenge = operative(Strophe.SASLSHA1.prototype.computeChallenge);
 Strophe.Connection.prototype.mechanisms[Strophe.SASLSHA1.prototype.name] = Strophe.SASLSHA1;
 
 /** PrivateConstructor: SASLMD5
@@ -3840,7 +3681,11 @@ Strophe.SASLMD5.prototype._quote = function (str)
   };
 
 
-Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce) {
+Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+  if (test_cnonce instanceof Function) {
+    callback = test_cnonce;
+    test_cnonce = null;
+  }
   var attribMatch = /([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)/;
   var cnonce = test_cnonce || MD5.hexdigest("" + (Math.random() * 1234567890));
   var realm = "";
@@ -3894,12 +3739,12 @@ Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cno
                                               MD5.hexdigest(A2)) + ",";
   responseText += 'qop=auth';
 
-  this.onChallenge = function ()
+  this.onChallenge = function (connection, challenge, test_cnonce, callback)
   {
-      return "";
-  }.bind(this);
+    callback(null, "");
+  };
 
-  return responseText;
+  callback(null, responseText);
 };
 
 Strophe.Connection.prototype.mechanisms[Strophe.SASLMD5.prototype.name] = Strophe.SASLMD5;

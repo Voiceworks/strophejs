@@ -319,53 +319,69 @@ define([
 
 		module("SASL Mechanisms");
 
-		test("SASL Plain Auth", function () {
+		asyncTest("SASL Plain Auth", function () {
 			var conn = {pass: "password", authcid: "user", authzid: "user@xmpp.org"};
 
 			ok(Strophe.SASLPlain.test(conn), "plain should pass the test");
 
 			var saslplain = new Strophe.SASLPlain();
 			saslplain.onStart(conn);
-			var response = saslplain.onChallenge(conn, null);
-			equal(response, [conn.authzid, conn.authcid, conn.pass].join("\u0000"),
-				"checking plain auth challenge");
-			saslplain.onSuccess();
+			var response = saslplain.onChallenge(conn, null, function(err, response) {
+				equal(response, [conn.authzid, conn.authcid, conn.pass].join("\u0000"),
+						"checking plain auth challenge");
+				saslplain.onSuccess();
+				QUnit.start();
+			});
 		});
 
-		test("SASL SCRAM-SHA-1 Auth", function () {
+		asyncTest("SASL SCRAM-SHA-1 Auth", function () {
 			var conn = {pass: "pencil", authcid: "user",
 						authzid: "user@xmpp.org", _sasl_data: []};
 			ok(Strophe.SASLSHA1.test(conn), "sha-1 should pass the test");
 			var saslsha1 = new Strophe.SASLSHA1();
 			saslsha1.onStart(conn);
+			QUnit.stop(2);
 			// test taken from example section on:
 			// URL: http://tools.ietf.org/html/rfc5802#section-5
-			var response = saslsha1.onChallenge(conn, null, "fyko+d2lbbFgONRv9qkxdawL");
-			equal(response, "n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL", "checking first auth challenge");
+			var response = saslsha1.onChallenge(conn, null, "fyko+d2lbbFgONRv9qkxdawL", function(err, challenge) {
+				equal(challenge, "n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL", "checking first auth challenge");
+				QUnit.start();
+			});
 
-			response = saslsha1.onChallenge(conn, "r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096");
-			equal(response, "c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=",
-				"checking second auth challenge");
-			saslsha1.onSuccess();
+			response = saslsha1.onChallenge(conn, "r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096",
+					null, function(err, challenge) {
+				equal(challenge, "c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=",
+						"checking second auth challenge");
+				saslsha1.onSuccess();
+				QUnit.start();
+			});
 		});
 
-		test("SASL DIGEST-MD-5 Auth", function () {
+		asyncTest("SASL DIGEST-MD-5 Auth", function () {
 			var conn = {pass: "secret", authcid: "chris",
 						authzid: "user@xmpp.org", servtype: "imap",
 						domain: "elwood.innosoft.com",
 						_sasl_data: []};
 
+			QUnit.stop(2);
 			ok(Strophe.SASLMD5.test(conn), "md-5 should pass the test");
 			var saslmd5 = new Strophe.SASLMD5();
 			saslmd5.onStart(conn);
 			// test taken from example section on:
 			// URL: http://www.ietf.org/rfc/rfc2831.txt
-			var response = saslmd5.onChallenge(conn, "realm=\"elwood.innosoft.com\",nonce=\"OA6MG9tEQGm2hh\",qop=\"auth\",algorithm=md5-sess,charset=utf-8", "OA6MHXh6VqTrRk");
-			equal(response, "charset=utf-8,username=\"chris\",realm=\"elwood.innosoft.com\",nonce=\"OA6MG9tEQGm2hh\",nc=00000001,cnonce=\"OA6MHXh6VqTrRk\",digest-uri=\"imap/elwood.innosoft.com\",response=d388dad90d4bbd760a152321f2143af7,qop=auth",
-				"checking first auth challenge");
-			response = saslmd5.onChallenge(conn, "rspauth=ea40f60335c427b5527b84dbabcdfffd");
-			equal(response, "", "checking second auth challenge");
-			saslmd5.onSuccess();
+			var response = saslmd5.onChallenge(conn, "realm=\"elwood.innosoft.com\",nonce=\"OA6MG9tEQGm2hh\",qop=\"auth\"," +
+					"algorithm=md5-sess,charset=utf-8", "OA6MHXh6VqTrRk", function(err, response) {
+				equal(response, "charset=utf-8,username=\"chris\",realm=\"elwood.innosoft.com\",nonce=\"OA6MG9tEQGm2hh\",nc=" +
+						"00000001,cnonce=\"OA6MHXh6VqTrRk\",digest-uri=\"imap/elwood.innosoft.com\",response=d388dad90d4bbd760a1" +
+						"52321f2143af7,qop=auth",
+						"checking first auth challenge");
+				QUnit.start();
+			});
+			response = saslmd5.onChallenge(conn, "rspauth=ea40f60335c427b5527b84dbabcdfffd", function(err, response) {
+				equal(response, "", "checking second auth challenge");
+				saslmd5.onSuccess();
+				QUnit.start();
+			});
 		});
 	};
 	return {run: run};
