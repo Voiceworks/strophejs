@@ -2464,7 +2464,7 @@ Strophe.Connection.prototype = {
         });
 
         if (this._sasl_mechanism.isClientFirst) {
-          var response = this._sasl_mechanism.onChallenge(this, null, function(err, response) { // jshint ignore:line
+          this._sasl_mechanism.onChallenge(this, null, function(err, response) { // jshint ignore:line
             request_auth_exchange.t(Base64.encode(response));
             this.send(request_auth_exchange.tree());
           }); // jshint ignore:line
@@ -3123,6 +3123,7 @@ Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cn
 
   if (!callback && test_cnonce.call) {
     callback = test_cnonce;
+    test_cnonce = null;
   }
 
   if (!this.firstChallengeDone) {
