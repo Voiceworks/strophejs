@@ -460,13 +460,8 @@ if (!Array.prototype.indexOf)
         window.$iq =            o.$iq;
         window.$msg =           o.$msg;
         window.$pres =          o.$pres;
-        window.SHA1 =           o.SHA1;
         window.Base64 =         o.Base64;
         window.MD5 =            o.MD5;
-        window.b64_hmac_sha1 =  o.SHA1.b64_hmac_sha1;
-        window.b64_sha1 =       o.SHA1.b64_sha1;
-        window.str_hmac_sha1 =  o.SHA1.str_hmac_sha1;
-        window.str_sha1 =       o.SHA1.str_sha1;
     }
 }(this, function (SHA1, Base64, MD5) {
 
