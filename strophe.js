@@ -2946,7 +2946,7 @@ Strophe.Connection.prototype = {
           stanza.t(Base64.encode(response));
         }
         this.send(stanza.tree());
-      });
+      }.bind(this));
 
       return true;
     },
