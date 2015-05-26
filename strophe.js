@@ -2901,7 +2901,7 @@ Strophe.Connection.prototype = {
           this._sasl_mechanism.onChallenge(this, null, function(err, response) { // jshint ignore:line
             request_auth_exchange.t(Base64.encode(response));
             this.send(request_auth_exchange.tree());
-          }); // jshint ignore:line
+          }.bind(this)); // jshint ignore:line
         } else {
           this.send(request_auth_exchange.tree());
         }
