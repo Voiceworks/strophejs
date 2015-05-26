@@ -3135,7 +3135,7 @@ Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cn
 
     this.firstChallengeDone = true;
 
-    callback(null, responseText);
+    callback(null, auth_str);
   } else {
 
     var nonce, salt, iter;
