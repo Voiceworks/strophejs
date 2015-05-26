@@ -3121,6 +3121,10 @@ Strophe.SASLSHA1.test = function(connection) {
 Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
   var cnonce;
 
+  if (!callback && test_cnonce.call) {
+    callback = test_cnonce;
+  }
+
   if (!this.firstChallengeDone) {
     cnonce = test_cnonce || MD5.hexdigest(Math.random() * 1234567890);
 
