@@ -117,10 +117,10 @@ Strophe.Websocket.prototype = {
         var ns = "urn:ietf:params:xml:ns:xmpp-streams";
         for (var i = 0; i < error.childNodes.length; i++) {
             var e = error.childNodes[i];
-            if (e.getAttribute("xmlns") !== ns) {
-                break;
-            } if (e.nodeName === "text") {
+            if (e.nodeType === 3) {
                 text = e.textContent;
+            } else if (e.getAttribute("xmlns") !== ns) {
+                break;
             } else {
                 condition = e.nodeName;
             }
