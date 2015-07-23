@@ -3216,6 +3216,10 @@ Strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectio
   callback(null, SHA1.binb2str(clientKey), serverSignature);
 };
 
+// IE10 and web workers issue
+// https://github.com/padolsey/operative/issues/36
+operative.hasWorkerSupport = operative.hasWorkerViaBlobSupport;
+
 // Wrap it in a worker
 Strophe.SASLSHA1.prototype.computeChallenge = operative(Strophe.SASLSHA1.prototype.computeChallenge);
 Strophe.Connection.prototype.mechanisms[Strophe.SASLSHA1.prototype.name] = Strophe.SASLSHA1;
