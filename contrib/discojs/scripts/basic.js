@@ -22,19 +22,19 @@ function rawOutput(data)
 
 function onConnect(status)
 {
-    if (status == Strophe.Status.CONNECTING) {
+    if (status == strophe.Status.CONNECTING) {
 	log('Strophe is connecting.');
 
-    } else if (status == Strophe.Status.CONNFAIL) {
+    } else if (status == strophe.Status.CONNFAIL) {
 	log('Strophe failed to connect.');
 	showConnect();
-    } else if (status == Strophe.Status.DISCONNECTING) {
+    } else if (status == strophe.Status.DISCONNECTING) {
 	log('Strophe is disconnecting.');
-    } else if (status == Strophe.Status.DISCONNECTED) {
+    } else if (status == strophe.Status.DISCONNECTED) {
 	log('Strophe is disconnected.');
 	showConnect();
 
-    } else if (status == Strophe.Status.CONNECTED) {
+    } else if (status == strophe.Status.CONNECTED) {
 	log('Strophe is connected.');
 	// Start up disco browser
 	browser.showBrowser();
@@ -72,7 +72,7 @@ function showDisconnect()
 }
 
 $(document).ready(function () {
-    connection = new Strophe.Connection(BOSH_SERVICE);
+    connection = new strophe.Connection(BOSH_SERVICE);
     connection.rawInput = rawInput;
     connection.rawOutput = rawOutput;
 

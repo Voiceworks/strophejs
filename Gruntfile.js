@@ -42,8 +42,15 @@ module.exports = function(grunt){
 
         concat: {
             dist: {
-                src: ['node_modules/operative/dist/operative.min.js', 'src/wrap_header.js', 'src/base64.js',
-                    'src/sha1.js', 'src/md5.js', 'src/polyfills.js', 'src/core.js', 'src/bosh.js', 'src/websocket.js',
+                src: ['node_modules/operative/dist/operative.min.js',
+                    'src/wrap_header.js',
+                    'src/base64.js',
+                    'src/sha1.js',
+                    'src/md5.js',
+                    'src/polyfills.js',
+                    'src/core.js',
+                    'src/bosh.js',
+                    'src/websocket.js',
                     'src/wrap_footer.js'],
                 dest: '<%= pkg.name %>'
             },

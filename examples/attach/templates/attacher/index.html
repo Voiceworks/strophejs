@@ -35,7 +35,7 @@
 
 	  function onConnect(status) 
 	  {
-	      if (status == Strophe.Status.DISCONNECTED)
+	      if (status == strophe.Status.DISCONNECTED)
 	          log('Disconnected.');
 	  }
 
@@ -46,7 +46,7 @@
 	  
 	  $(document).ready(function () {
 	      // create the connection and attach it
-	      connection = new Strophe.Connection(BOSH_SERVICE);
+	      connection = new strophe.Connection(BOSH_SERVICE);
 	      connection.rawInput = function (data) { 
 	          log('RECV: ' + data); 
 	      };
@@ -68,7 +68,7 @@
 	      var iq = $iq({to: 'jabber.org',
 	                    type: 'get',
 			    id: 'disco-1'})
-                  .c('query', {xmlns: Strophe.NS.DISCO_INFO})
+                  .c('query', {xmlns: strophe.NS.DISCO_INFO})
 		  .tree()
 
               startTime = new Date();
