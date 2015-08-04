@@ -8,17 +8,17 @@ function log(msg)
 
 function onConnect(status)
 {
-    if (status == strophe.Status.CONNECTING) {
+    if (status == Strophe.Status.CONNECTING) {
 	log('Strophe is connecting.');
-    } else if (status == strophe.Status.CONNFAIL) {
+    } else if (status == Strophe.Status.CONNFAIL) {
 	log('Strophe failed to connect.');
 	$('#connect').get(0).value = 'connect';
-    } else if (status == strophe.Status.DISCONNECTING) {
+    } else if (status == Strophe.Status.DISCONNECTING) {
 	log('Strophe is disconnecting.');
-    } else if (status == strophe.Status.DISCONNECTED) {
+    } else if (status == Strophe.Status.DISCONNECTED) {
 	log('Strophe is disconnected.');
 	$('#connect').get(0).value = 'connect';
-    } else if (status == strophe.Status.CONNECTED) {
+    } else if (status == Strophe.Status.CONNECTED) {
 	log('Strophe is connected.');
 	log('ECHOBOT: Send a message to ' + connection.jid + 
 	    ' to talk to me.');
@@ -38,13 +38,13 @@ function onMessage(msg) {
 	var body = elems[0];
 
 	log('ECHOBOT: I got a message from ' + from + ': ' + 
-	    strophe.getText(body));
+	    Strophe.getText(body));
     
 	var reply = $msg({to: from, from: to, type: 'chat'})
-            .cnode(strophe.copyElement(body));
+            .cnode(Strophe.copyElement(body));
 	connection.send(reply.tree());
 
-	log('ECHOBOT: I sent ' + from + ': ' + strophe.getText(body));
+	log('ECHOBOT: I sent ' + from + ': ' + Strophe.getText(body));
     }
 
     // we must return true to keep the handler alive.  
@@ -53,7 +53,7 @@ function onMessage(msg) {
 }
 
 $(document).ready(function () {
-    connection = new strophe.Connection(BOSH_SERVICE);
+    connection = new Strophe.Connection(BOSH_SERVICE);
 
     // Uncomment the following lines to spy on the wire traffic.
     //connection.rawInput = function (data) { log('RECV: ' + data); };

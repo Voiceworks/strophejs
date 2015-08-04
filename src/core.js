@@ -8,11 +8,76 @@
 /* jshint undef: true, unused: true:, noarg: true, latedef: true */
 /*global define, document, window, setTimeout, clearTimeout, console, ActiveXObject, DOMParser */
 
-require('./base64')
-require('./md5')
-require('./sha1')
-require('./polyfills')
-var SH1Source = require('./sha1')
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define('strophe-core', [
+            'strophe-sha1',
+            'strophe-base64',
+            'strophe-md5',
+            "strophe-polyfill"
+        ], function () {
+            return factory.apply(this, arguments);
+        });
+    } else {
+        // Browser globals
+        var o = factory(root.SHA1, root.Base64, root.MD5);
+        window.Strophe =        o.Strophe;
+        window.$build =         o.$build;
+        window.$iq =            o.$iq;
+        window.$msg =           o.$msg;
+        window.$pres =          o.$pres;
+        window.Base64 =         o.Base64;
+        window.MD5 =            o.MD5;
+    }
+}(this, function (SHA1, Base64, MD5) {
+
+var Strophe;
+
+/** Function: $build
+ *  Create a Strophe.Builder.
+ *  This is an alias for 'new Strophe.Builder(name, attrs)'.
+ *
+ *  Parameters:
+ *    (String) name - The root element name.
+ *    (Object) attrs - The attributes for the root element in object notation.
+ *
+ *  Returns:
+ *    A new Strophe.Builder object.
+ */
+function $build(name, attrs) { return new Strophe.Builder(name, attrs); }
+
+/** Function: $msg
+ *  Create a Strophe.Builder with a <message/> element as the root.
+ *
+ *  Parmaeters:
+ *    (Object) attrs - The <message/> element attributes in object notation.
+ *
+ *  Returns:
+ *    A new Strophe.Builder object.
+ */
+function $msg(attrs) { return new Strophe.Builder("message", attrs); }
+
+/** Function: $iq
+ *  Create a Strophe.Builder with an <iq/> element as the root.
+ *
+ *  Parameters:
+ *    (Object) attrs - The <iq/> element attributes in object notation.
+ *
+ *  Returns:
+ *    A new Strophe.Builder object.
+ */
+function $iq(attrs) { return new Strophe.Builder("iq", attrs); }
+
+/** Function: $pres
+ *  Create a Strophe.Builder with a <presence/> element as the root.
+ *
+ *  Parameters:
+ *    (Object) attrs - The <presence/> element attributes in object notation.
+ *
+ *  Returns:
+ *    A new Strophe.Builder object.
+ */
+function $pres(attrs) { return new Strophe.Builder("presence", attrs); }
 
 /** Class: Strophe
  *  An object container for all Strophe library functions.
@@ -21,7 +86,7 @@ var SH1Source = require('./sha1')
  *  used in the library.  It is not meant to be instantiated, but to
  *  provide a namespace for library objects, constants, and functions.
  */
-var strophe = {
+Strophe = {
     /** Constant: VERSION
      *  The version of the Strophe library. Unreleased builds will have
      *  a version of head-HASH where HASH is a partial revision.
@@ -95,8 +160,8 @@ var strophe = {
                 css: ['background-color','color','font-family','font-size','font-style','font-weight','margin-left','margin-right','text-align','text-decoration'],
                 validTag: function(tag)
                 {
-                        for(var i = 0; i < strophe.XHTML.tags.length; i++) {
-                                if(tag == strophe.XHTML.tags[i]) {
+                        for(var i = 0; i < Strophe.XHTML.tags.length; i++) {
+                                if(tag == Strophe.XHTML.tags[i]) {
                                         return true;
                                 }
                         }
@@ -104,9 +169,9 @@ var strophe = {
                 },
                 validAttribute: function(tag, attribute)
                 {
-                        if(typeof strophe.XHTML.attributes[tag] !== 'undefined' && strophe.XHTML.attributes[tag].length > 0) {
-                                for(var i = 0; i < strophe.XHTML.attributes[tag].length; i++) {
-                                        if(attribute == strophe.XHTML.attributes[tag][i]) {
+                        if(typeof Strophe.XHTML.attributes[tag] !== 'undefined' && Strophe.XHTML.attributes[tag].length > 0) {
+                                for(var i = 0; i < Strophe.XHTML.attributes[tag].length; i++) {
+                                        if(attribute == Strophe.XHTML.attributes[tag][i]) {
                                                 return true;
                                         }
                                 }
@@ -115,8 +180,8 @@ var strophe = {
                 },
                 validCSS: function(style)
                 {
-                        for(var i = 0; i < strophe.XHTML.css.length; i++) {
-                                if(style == strophe.XHTML.css[i]) {
+                        for(var i = 0; i < Strophe.XHTML.css.length; i++) {
+                                if(style == Strophe.XHTML.css[i]) {
                                         return true;
                                 }
                         }
@@ -213,7 +278,7 @@ var strophe = {
      */
     addNamespace: function (name, value)
     {
-      strophe.NS[name] = value;
+      Strophe.NS[name] = value;
     },
 
     /** Function: forEachChild
@@ -236,7 +301,7 @@ var strophe = {
 
         for (i = 0; i < elem.childNodes.length; i++) {
             childNode = elem.childNodes[i];
-            if (childNode.nodeType == strophe.ElementType.NORMAL &&
+            if (childNode.nodeType == Strophe.ElementType.NORMAL &&
                 (!elemName || this.isTagEqual(childNode, elemName))) {
                 func(childNode);
             }
@@ -296,10 +361,10 @@ var strophe = {
      *    The currently used DOM document.
      */
     xmlGenerator: function () {
-        if (!strophe._xmlGenerator) {
-            strophe._xmlGenerator = strophe._makeGenerator();
+        if (!Strophe._xmlGenerator) {
+            Strophe._xmlGenerator = Strophe._makeGenerator();
         }
-        return strophe._xmlGenerator;
+        return Strophe._xmlGenerator;
     },
 
     /** PrivateFunction: _getIEXmlDom
@@ -359,7 +424,7 @@ var strophe = {
     {
         if (!name) { return null; }
 
-        var node = strophe.xmlGenerator().createElement(name);
+        var node = Strophe.xmlGenerator().createElement(name);
 
         // FIXME: this should throw errors if args are the wrong type or
         // there are more than two optional args
@@ -368,7 +433,7 @@ var strophe = {
             if (!arguments[a]) { continue; }
             if (typeof(arguments[a]) == "string" ||
                 typeof(arguments[a]) == "number") {
-                node.appendChild(strophe.xmlTextNode(arguments[a]));
+                node.appendChild(Strophe.xmlTextNode(arguments[a]));
             } else if (typeof(arguments[a]) == "object" &&
                        typeof(arguments[a].sort) == "function") {
                 for (i = 0; i < arguments[a].length; i++) {
@@ -441,7 +506,7 @@ var strophe = {
      */
     xmlTextNode: function (text)
     {
-        return strophe.xmlGenerator().createTextNode(text);
+        return Strophe.xmlGenerator().createTextNode(text);
     },
 
     /** Function: xmlHtmlNode
@@ -483,17 +548,17 @@ var strophe = {
 
         var str = "";
         if (elem.childNodes.length === 0 && elem.nodeType ==
-            strophe.ElementType.TEXT) {
+            Strophe.ElementType.TEXT) {
             str += elem.nodeValue;
         }
 
         for (var i = 0; i < elem.childNodes.length; i++) {
-            if (elem.childNodes[i].nodeType == strophe.ElementType.TEXT) {
+            if (elem.childNodes[i].nodeType == Strophe.ElementType.TEXT) {
                 str += elem.childNodes[i].nodeValue;
             }
         }
 
-        return strophe.xmlescape(str);
+        return Strophe.xmlescape(str);
     },
 
     /** Function: copyElement
@@ -511,8 +576,8 @@ var strophe = {
     copyElement: function (elem)
     {
         var i, el;
-        if (elem.nodeType == strophe.ElementType.NORMAL) {
-            el = strophe.xmlElement(elem.tagName);
+        if (elem.nodeType == Strophe.ElementType.NORMAL) {
+            el = Strophe.xmlElement(elem.tagName);
 
             for (i = 0; i < elem.attributes.length; i++) {
                 el.setAttribute(elem.attributes[i].nodeName,
@@ -520,10 +585,10 @@ var strophe = {
             }
 
             for (i = 0; i < elem.childNodes.length; i++) {
-                el.appendChild(strophe.copyElement(elem.childNodes[i]));
+                el.appendChild(Strophe.copyElement(elem.childNodes[i]));
             }
-        } else if (elem.nodeType == strophe.ElementType.TEXT) {
-            el = strophe.xmlGenerator().createTextNode(elem.nodeValue);
+        } else if (elem.nodeType == Strophe.ElementType.TEXT) {
+            el = Strophe.xmlGenerator().createTextNode(elem.nodeValue);
         }
 
         return el;
@@ -545,13 +610,13 @@ var strophe = {
     createHtml: function (elem)
     {
         var i, el, j, tag, attribute, value, css, cssAttrs, attr, cssName, cssValue;
-        if (elem.nodeType == strophe.ElementType.NORMAL) {
+        if (elem.nodeType == Strophe.ElementType.NORMAL) {
             tag = elem.nodeName;
-            if(strophe.XHTML.validTag(tag)) {
+            if(Strophe.XHTML.validTag(tag)) {
                 try {
-                    el = strophe.xmlElement(tag);
-                    for(i = 0; i < strophe.XHTML.attributes[tag].length; i++) {
-                        attribute = strophe.XHTML.attributes[tag][i];
+                    el = Strophe.xmlElement(tag);
+                    for(i = 0; i < Strophe.XHTML.attributes[tag].length; i++) {
+                        attribute = Strophe.XHTML.attributes[tag][i];
                         value = elem.getAttribute(attribute);
                         if(typeof value == 'undefined' || value === null || value === '' || value === false || value === 0) {
                             continue;
@@ -568,7 +633,7 @@ var strophe = {
                             for(j = 0; j < cssAttrs.length; j++) {
                                 attr = cssAttrs[j].split(':');
                                 cssName = attr[0].replace(/^\s*/, "").replace(/\s*$/, "").toLowerCase();
-                                if(strophe.XHTML.validCSS(cssName)) {
+                                if(Strophe.XHTML.validCSS(cssName)) {
                                     cssValue = attr[1].replace(/^\s*/, "").replace(/\s*$/, "");
                                     css.push(cssName + ': ' + cssValue);
                                 }
@@ -583,24 +648,24 @@ var strophe = {
                     }
 
                     for (i = 0; i < elem.childNodes.length; i++) {
-                        el.appendChild(strophe.createHtml(elem.childNodes[i]));
+                        el.appendChild(Strophe.createHtml(elem.childNodes[i]));
                     }
                 } catch(e) { // invalid elements
-                  el = strophe.xmlTextNode('');
+                  el = Strophe.xmlTextNode('');
                 }
             } else {
-                el = strophe.xmlGenerator().createDocumentFragment();
+                el = Strophe.xmlGenerator().createDocumentFragment();
                 for (i = 0; i < elem.childNodes.length; i++) {
-                    el.appendChild(strophe.createHtml(elem.childNodes[i]));
+                    el.appendChild(Strophe.createHtml(elem.childNodes[i]));
                 }
             }
-        } else if (elem.nodeType == strophe.ElementType.FRAGMENT) {
-            el = strophe.xmlGenerator().createDocumentFragment();
+        } else if (elem.nodeType == Strophe.ElementType.FRAGMENT) {
+            el = Strophe.xmlGenerator().createDocumentFragment();
             for (i = 0; i < elem.childNodes.length; i++) {
-                el.appendChild(strophe.createHtml(elem.childNodes[i]));
+                el.appendChild(Strophe.createHtml(elem.childNodes[i]));
             }
-        } else if (elem.nodeType == strophe.ElementType.TEXT) {
-            el = strophe.xmlTextNode(elem.nodeValue);
+        } else if (elem.nodeType == Strophe.ElementType.TEXT) {
+            el = Strophe.xmlTextNode(elem.nodeValue);
         }
 
         return el;
@@ -681,7 +746,7 @@ var strophe = {
      */
     getDomainFromJid: function (jid)
     {
-        var bare = strophe.getBareJidFromJid(jid);
+        var bare = Strophe.getBareJidFromJid(jid);
         if (bare.indexOf("@") < 0) {
             return bare;
         } else {
@@ -856,15 +921,15 @@ var strophe = {
             for (i = 0; i < elem.childNodes.length; i++) {
                 child = elem.childNodes[i];
                 switch( child.nodeType ){
-                  case strophe.ElementType.NORMAL:
+                  case Strophe.ElementType.NORMAL:
                     // normal element, so recurse
-                    result += strophe.serialize(child);
+                    result += Strophe.serialize(child);
                     break;
-                  case strophe.ElementType.TEXT:
+                  case Strophe.ElementType.TEXT:
                     // text element to escape values
-                    result += strophe.xmlescape(child.nodeValue);
+                    result += Strophe.xmlescape(child.nodeValue);
                     break;
-                  case strophe.ElementType.CDATA:
+                  case Strophe.ElementType.CDATA:
                     // cdata section so don't escape values
                     result += "<![CDATA["+child.nodeValue+"]]>";
                 }
@@ -898,7 +963,7 @@ var strophe = {
      */
     addConnectionPlugin: function (name, ptype)
     {
-        strophe._connectionPlugins[name] = ptype;
+        Strophe._connectionPlugins[name] = ptype;
     }
 };
 
@@ -943,25 +1008,25 @@ var strophe = {
  *  Returns:
  *    A new Strophe.Builder.
  */
-strophe.Builder = function (name, attrs)
+Strophe.Builder = function (name, attrs)
 {
     // Set correct namespace for jabber:client elements
     if (name == "presence" || name == "message" || name == "iq") {
         if (attrs && !attrs.xmlns) {
-            attrs.xmlns = strophe.NS.CLIENT;
+            attrs.xmlns = Strophe.NS.CLIENT;
         } else if (!attrs) {
-            attrs = {xmlns: strophe.NS.CLIENT};
+            attrs = {xmlns: Strophe.NS.CLIENT};
         }
     }
 
     // Holds the tree being built.
-    this.nodeTree = strophe.xmlElement(name, attrs);
+    this.nodeTree = Strophe.xmlElement(name, attrs);
 
     // Points to the current operation node.
     this.node = this.nodeTree;
 };
 
-strophe.Builder.prototype = {
+Strophe.Builder.prototype = {
     /** Function: tree
      *  Return the DOM tree.
      *
@@ -988,7 +1053,7 @@ strophe.Builder.prototype = {
      */
     toString: function ()
     {
-        return strophe.serialize(this.nodeTree);
+        return Strophe.serialize(this.nodeTree);
     },
 
     /** Function: up
@@ -1051,7 +1116,7 @@ strophe.Builder.prototype = {
      */
     c: function (name, attrs, text)
     {
-        var child = strophe.xmlElement(name, attrs, text);
+        var child = Strophe.xmlElement(name, attrs, text);
         this.node.appendChild(child);
         if (!text) {
             this.node = child;
@@ -1076,7 +1141,7 @@ strophe.Builder.prototype = {
     cnode: function (elem)
     {
         var impNode;
-        var xmlGen = strophe.xmlGenerator();
+        var xmlGen = Strophe.xmlGenerator();
         try {
             impNode = (xmlGen.importNode !== undefined);
         }
@@ -1085,7 +1150,7 @@ strophe.Builder.prototype = {
         }
         var newElem = impNode ?
                       xmlGen.importNode(elem, true) :
-                      strophe.copyElement(elem);
+                      Strophe.copyElement(elem);
         this.node.appendChild(newElem);
         this.node = newElem;
         return this;
@@ -1105,7 +1170,7 @@ strophe.Builder.prototype = {
      */
     t: function (text)
     {
-        var child = strophe.xmlTextNode(text);
+        var child = Strophe.xmlTextNode(text);
         this.node.appendChild(child);
         return this;
     },
@@ -1129,7 +1194,7 @@ strophe.Builder.prototype = {
         fragment.innerHTML = html;
 
         // copy cleaned html into an xml dom
-        var xhtml = strophe.createHtml(fragment);
+        var xhtml = Strophe.createHtml(fragment);
 
         while(xhtml.childNodes.length > 0) {
             this.node.appendChild(xhtml.childNodes[0]);
@@ -1167,7 +1232,7 @@ strophe.Builder.prototype = {
  *  Returns:
  *    A new Strophe.Handler object.
  */
-strophe.Handler = function (handler, ns, name, type, id, from, options)
+Strophe.Handler = function (handler, ns, name, type, id, from, options)
 {
     this.handler = handler;
     this.ns = ns;
@@ -1182,7 +1247,7 @@ strophe.Handler = function (handler, ns, name, type, id, from, options)
     }
 
     if (this.options.matchBare) {
-        this.from = from ? strophe.getBareJidFromJid(from) : null;
+        this.from = from ? Strophe.getBareJidFromJid(from) : null;
     } else {
         this.from = from;
     }
@@ -1191,7 +1256,7 @@ strophe.Handler = function (handler, ns, name, type, id, from, options)
     this.user = true;
 };
 
-strophe.Handler.prototype = {
+Strophe.Handler.prototype = {
     /** PrivateFunction: isMatch
      *  Tests if a stanza matches the Strophe.Handler.
      *
@@ -1207,7 +1272,7 @@ strophe.Handler.prototype = {
         var from = null;
 
         if (this.options.matchBare) {
-            from = strophe.getBareJidFromJid(elem.getAttribute('from'));
+            from = Strophe.getBareJidFromJid(elem.getAttribute('from'));
         } else {
             from = elem.getAttribute('from');
         }
@@ -1217,7 +1282,7 @@ strophe.Handler.prototype = {
             nsMatch = true;
         } else {
             var that = this;
-            strophe.forEachChild(elem, null, function (elem) {
+            Strophe.forEachChild(elem, null, function (elem) {
                 if (elem.getAttribute("xmlns") == that.ns) {
                     nsMatch = true;
                 }
@@ -1228,7 +1293,7 @@ strophe.Handler.prototype = {
 
         var elem_type = elem.getAttribute("type");
         if (nsMatch &&
-            (!this.name || strophe.isTagEqual(elem, this.name)) &&
+            (!this.name || Strophe.isTagEqual(elem, this.name)) &&
             (!this.type || (Array.isArray(this.type) ? this.type.indexOf(elem_type) != -1 : elem_type == this.type)) &&
             (!this.id || elem.getAttribute("id") == this.id) &&
             (!this.from || from == this.from)) {
@@ -1255,7 +1320,7 @@ strophe.Handler.prototype = {
             result = this.handler(elem);
         } catch (e) {
             if (e.sourceURL) {
-                strophe.fatal("error: " + this.handler +
+                Strophe.fatal("error: " + this.handler +
                               " " + e.sourceURL + ":" +
                               e.line + " - " + e.name + ": " + e.message);
             } else if (e.fileName) {
@@ -1263,11 +1328,11 @@ strophe.Handler.prototype = {
                     console.trace();
                     console.error(this.handler, " - error - ", e, e.message);
                 }
-                strophe.fatal("error: " + this.handler + " " +
+                Strophe.fatal("error: " + this.handler + " " +
                               e.fileName + ":" + e.lineNumber + " - " +
                               e.name + ": " + e.message);
             } else {
-                strophe.fatal("error: " + e.message + "\n" + e.stack);
+                Strophe.fatal("error: " + e.message + "\n" + e.stack);
             }
 
             throw e;
@@ -1314,7 +1379,7 @@ strophe.Handler.prototype = {
  *  Returns:
  *    A new Strophe.TimedHandler object.
  */
-strophe.TimedHandler = function (period, handler)
+Strophe.TimedHandler = function (period, handler)
 {
     this.period = period;
     this.handler = handler;
@@ -1323,7 +1388,7 @@ strophe.TimedHandler = function (period, handler)
     this.user = true;
 };
 
-strophe.TimedHandler.prototype = {
+Strophe.TimedHandler.prototype = {
     /** PrivateFunction: run
      *  Run the callback for the Strophe.TimedHandler.
      *
@@ -1426,7 +1491,7 @@ strophe.TimedHandler.prototype = {
  *  Returns:
  *    A new Strophe.Connection object.
  */
-strophe.Connection = function (service, options)
+Strophe.Connection = function (service, options)
 {
     // The service URL
     this.service = service;
@@ -1438,9 +1503,9 @@ strophe.Connection = function (service, options)
     // Select protocal based on service or options
     if (service.indexOf("ws:") === 0 || service.indexOf("wss:") === 0 ||
             proto.indexOf("ws") === 0) {
-        this._proto = new strophe.Websocket(this);
+        this._proto = new Strophe.Websocket(this);
     } else {
-        this._proto = new strophe.Bosh(this);
+        this._proto = new Strophe.Bosh(this);
     }
     /* The connected JID. */
     this.jid = "";
@@ -1487,24 +1552,19 @@ strophe.Connection = function (service, options)
     this._idleTimeout = setTimeout(this._onIdle.bind(this), 100);
 
     // initialize plugins
-    for (var k in strophe._connectionPlugins) {
-        if (strophe._connectionPlugins.hasOwnProperty(k)) {
-            var ptype = strophe._connectionPlugins[k];
-            // when the plugin is an actuall class, skip the magic ;)
-            if (ptype instanceof Function) {
-                this[k] = new ptype(this);
-            } else {
-                // jslint complaints about the below line, but this is fine
-                var F = function () {}; // jshint ignore:line
-                F.prototype = ptype;
-                this[k] = new F();
-                this[k].init(this);
-            }
+    for (var k in Strophe._connectionPlugins) {
+        if (Strophe._connectionPlugins.hasOwnProperty(k)) {
+            var ptype = Strophe._connectionPlugins[k];
+            // jslint complaints about the below line, but this is fine
+            var F = function () {}; // jshint ignore:line
+            F.prototype = ptype;
+            this[k] = new F();
+            this[k].init(this);
         }
     }
 };
 
-strophe.Connection.prototype = {
+Strophe.Connection.prototype = {
     /** Function: reset
      *  Reset the connection.
      *
@@ -1629,11 +1689,11 @@ strophe.Connection.prototype = {
         /** Variable: authzid
          *  Authorization identity.
          */
-        this.authzid = strophe.getBareJidFromJid(this.jid);
+        this.authzid = Strophe.getBareJidFromJid(this.jid);
         /** Variable: authcid
          *  Authentication identity (User name).
          */
-        this.authcid = authcid || strophe.getNodeFromJid(this.jid);
+        this.authcid = authcid || Strophe.getNodeFromJid(this.jid);
         /** Variable: pass
          *  Authentication identity (User password).
          */
@@ -1648,9 +1708,9 @@ strophe.Connection.prototype = {
         this.authenticated = false;
 
         // parse jid for domain
-        this.domain = strophe.getDomainFromJid(this.jid);
+        this.domain = Strophe.getDomainFromJid(this.jid);
 
-        this._changeConnectStatus(strophe.Status.CONNECTING, null);
+        this._changeConnectStatus(Strophe.Status.CONNECTING, null);
 
         this._proto._connect(wait, hold, route);
     },
@@ -1858,8 +1918,8 @@ strophe.Connection.prototype = {
             var from = stanza.getAttribute("from");
             if (from === expectedFrom ||
                (expectedFrom === null &&
-                   (from === strophe.getBareJidFromJid(fulljid) ||
-                    from === strophe.getDomainFromJid(fulljid) ||
+                   (from === Strophe.getBareJidFromJid(fulljid) ||
+                    from === Strophe.getDomainFromJid(fulljid) ||
                     from === fulljid))) {
                 acceptable = true;
             }
@@ -1958,7 +2018,7 @@ strophe.Connection.prototype = {
      */
     addTimedHandler: function (period, handler)
     {
-        var thand = new strophe.TimedHandler(period, handler);
+        var thand = new Strophe.TimedHandler(period, handler);
         this.addTimeds.push(thand);
         return thand;
     },
@@ -2020,7 +2080,7 @@ strophe.Connection.prototype = {
      */
     addHandler: function (handler, ns, name, type, id, from, options)
     {
-        var hand = new strophe.Handler(handler, ns, name, type, id, from, options);
+        var hand = new Strophe.Handler(handler, ns, name, type, id, from, options);
         this.addHandlers.push(hand);
         return hand;
     },
@@ -2066,15 +2126,15 @@ strophe.Connection.prototype = {
      */
     disconnect: function (reason)
     {
-        this._changeConnectStatus(strophe.Status.DISCONNECTING, reason);
+        this._changeConnectStatus(Strophe.Status.DISCONNECTING, reason);
 
-        strophe.info("Disconnect was called because: " + reason);
+        Strophe.info("Disconnect was called because: " + reason);
         if (this.connected) {
             var pres = false;
             this.disconnecting = true;
             if (this.authenticated) {
                 pres = $pres({
-                    xmlns: strophe.NS.CLIENT,
+                    xmlns: Strophe.NS.CLIENT,
                     type: 'unavailable'
                 });
             }
@@ -2083,7 +2143,7 @@ strophe.Connection.prototype = {
                 3000, this._onDisconnectTimeout.bind(this));
             this._proto._disconnect(pres);
         } else {
-            strophe.info("Disconnect was called before Strophe connected to the server");
+            Strophe.info("Disconnect was called before Strophe connected to the server");
             this._proto._abortAllRequests();
         }
     },
@@ -2100,14 +2160,14 @@ strophe.Connection.prototype = {
     _changeConnectStatus: function (status, condition)
     {
         // notify all plugins listening for status changes
-        for (var k in strophe._connectionPlugins) {
-            if (strophe._connectionPlugins.hasOwnProperty(k)) {
+        for (var k in Strophe._connectionPlugins) {
+            if (Strophe._connectionPlugins.hasOwnProperty(k)) {
                 var plugin = this[k];
                 if (plugin.statusChanged) {
                     try {
                         plugin.statusChanged(status, condition);
                     } catch (err) {
-                        strophe.error("" + k + " plugin caused an exception " +
+                        Strophe.error("" + k + " plugin caused an exception " +
                                       "changing status: " + err);
                     }
                 }
@@ -2119,7 +2179,7 @@ strophe.Connection.prototype = {
             try {
                 this.connect_callback(status, condition);
             } catch (e) {
-                strophe.error("User connection callback caused an " +
+                Strophe.error("User connection callback caused an " +
                               "exception: " + e);
             }
         }
@@ -2143,7 +2203,7 @@ strophe.Connection.prototype = {
             this._disconnectTimeout = null;
         }
 
-        strophe.info("_doDisconnect was called");
+        Strophe.info("_doDisconnect was called");
         this._proto._doDisconnect();
 
         this.authenticated = false;
@@ -2158,7 +2218,7 @@ strophe.Connection.prototype = {
         this.addHandlers = [];
 
         // tell the parent we disconnected
-        this._changeConnectStatus(strophe.Status.DISCONNECTED, null);
+        this._changeConnectStatus(Strophe.Status.DISCONNECTED, null);
         this.connected = false;
     },
 
@@ -2176,22 +2236,22 @@ strophe.Connection.prototype = {
      */
     _dataRecv: function (req, raw)
     {
-        strophe.info("_dataRecv called");
+        Strophe.info("_dataRecv called");
         var elem = this._proto._reqToData(req);
         if (elem === null) { return; }
 
-        if (this.xmlInput !== strophe.Connection.prototype.xmlInput) {
+        if (this.xmlInput !== Strophe.Connection.prototype.xmlInput) {
             if (elem.nodeName === this._proto.strip && elem.childNodes.length) {
                 this.xmlInput(elem.childNodes[0]);
             } else {
                 this.xmlInput(elem);
             }
         }
-        if (this.rawInput !== strophe.Connection.prototype.rawInput) {
+        if (this.rawInput !== Strophe.Connection.prototype.rawInput) {
             if (raw) {
                 this.rawInput(raw);
             } else {
-                this.rawInput(strophe.serialize(elem));
+                this.rawInput(Strophe.serialize(elem));
             }
         }
 
@@ -2231,9 +2291,9 @@ strophe.Connection.prototype = {
                 if (cond == "remote-stream-error" && conflict.length > 0) {
                     cond = "conflict";
                 }
-                this._changeConnectStatus(strophe.Status.CONNFAIL, cond);
+                this._changeConnectStatus(Strophe.Status.CONNFAIL, cond);
             } else {
-                this._changeConnectStatus(strophe.Status.CONNFAIL, "unknown");
+                this._changeConnectStatus(Strophe.Status.CONNFAIL, "unknown");
             }
             this._doDisconnect();
             return;
@@ -2241,7 +2301,7 @@ strophe.Connection.prototype = {
 
         // send each incoming stanza through the handler chain
         var that = this;
-        strophe.forEachChild(elem, null, function (child) {
+        Strophe.forEachChild(elem, null, function (child) {
             var i, newList;
             // process handlers
             newList = that.handlers;
@@ -2261,7 +2321,7 @@ strophe.Connection.prototype = {
                     }
                 } catch(e) {
                     // if the handler throws an exception, we consider it as false
-                    strophe.warn('Removing Strophe handlers due to uncaught exception: ' + e.message);
+                    Strophe.warn('Removing Strophe handlers due to uncaught exception: ' + e.message);
                 }
             }
         });
@@ -2291,30 +2351,30 @@ strophe.Connection.prototype = {
      */
     _connect_cb: function (req, _callback, raw)
     {
-        strophe.info("_connect_cb was called");
+        Strophe.info("_connect_cb was called");
 
         this.connected = true;
 
         var bodyWrap = this._proto._reqToData(req);
         if (!bodyWrap) { return; }
 
-        if (this.xmlInput !== strophe.Connection.prototype.xmlInput) {
+        if (this.xmlInput !== Strophe.Connection.prototype.xmlInput) {
             if (bodyWrap.nodeName === this._proto.strip && bodyWrap.childNodes.length) {
                 this.xmlInput(bodyWrap.childNodes[0]);
             } else {
                 this.xmlInput(bodyWrap);
             }
         }
-        if (this.rawInput !== strophe.Connection.prototype.rawInput) {
+        if (this.rawInput !== Strophe.Connection.prototype.rawInput) {
             if (raw) {
                 this.rawInput(raw);
             } else {
-                this.rawInput(strophe.serialize(bodyWrap));
+                this.rawInput(Strophe.serialize(bodyWrap));
             }
         }
 
         var conncheck = this._proto._connect_cb(bodyWrap);
-        if (conncheck === strophe.Status.CONNFAIL) {
+        if (conncheck === Strophe.Status.CONNFAIL) {
             return;
         }
 
@@ -2326,7 +2386,7 @@ strophe.Connection.prototype = {
         this._authentication.legacy_auth = false;
 
         // Check for the stream:features tag
-        var hasFeatures = bodyWrap.getElementsByTagNameNS(strophe.NS.STREAM, "features").length > 0;
+        var hasFeatures = bodyWrap.getElementsByTagNameNS(Strophe.NS.STREAM, "features").length > 0;
         var mechanisms = bodyWrap.getElementsByTagName("mechanism");
         var matched = [];
         var i, mech, found_authentication = false;
@@ -2336,7 +2396,7 @@ strophe.Connection.prototype = {
         }
         if (mechanisms.length > 0) {
             for (i = 0; i < mechanisms.length; i++) {
-                mech = strophe.getText(mechanisms[i]);
+                mech = Strophe.getText(mechanisms[i]);
                 if (this.mechanisms[mech]) matched.push(this.mechanisms[mech]);
             }
         }
@@ -2399,7 +2459,7 @@ strophe.Connection.prototype = {
         this._sasl_mechanism.onStart(this);
 
         var request_auth_exchange = $build("auth", {
-          xmlns: strophe.NS.SASL,
+          xmlns: Strophe.NS.SASL,
           mechanism: this._sasl_mechanism.name
         });
 
@@ -2418,15 +2478,15 @@ strophe.Connection.prototype = {
 
       if (!mechanism_found) {
         // if none of the mechanism worked
-        if (strophe.getNodeFromJid(this.jid) === null) {
+        if (Strophe.getNodeFromJid(this.jid) === null) {
             // we don't have a node, which is required for non-anonymous
             // client connections
-            this._changeConnectStatus(strophe.Status.CONNFAIL,
+            this._changeConnectStatus(Strophe.Status.CONNFAIL,
                                       'x-strophe-bad-non-anon-jid');
             this.disconnect('x-strophe-bad-non-anon-jid');
         } else {
           // fall back to legacy authentication
-          this._changeConnectStatus(strophe.Status.AUTHENTICATING, null);
+          this._changeConnectStatus(Strophe.Status.AUTHENTICATING, null);
           this._addSysHandler(this._auth1_cb.bind(this), null, null,
                               null, "_auth_1");
 
@@ -2435,18 +2495,18 @@ strophe.Connection.prototype = {
             to: this.domain,
             id: "_auth_1"
           }).c("query", {
-            xmlns: strophe.NS.AUTH
-          }).c("username", {}).t(strophe.getNodeFromJid(this.jid)).tree());
+            xmlns: Strophe.NS.AUTH
+          }).c("username", {}).t(Strophe.getNodeFromJid(this.jid)).tree());
         }
       }
 
     },
 
     _sasl_challenge_cb: function(elem) {
-      var challenge = Base64.decode(strophe.getText(elem));
+      var challenge = Base64.decode(Strophe.getText(elem));
       this._sasl_mechanism.onChallenge(this, challenge, function(err, response) {
         var stanza = $build('response', {
-          xmlns: strophe.NS.SASL
+          xmlns: Strophe.NS.SASL
         });
         if (response !== "") {
           stanza.t(Base64.encode(response));
@@ -2476,18 +2536,18 @@ strophe.Connection.prototype = {
     {
         // build plaintext auth iq
         var iq = $iq({type: "set", id: "_auth_2"})
-            .c('query', {xmlns: strophe.NS.AUTH})
-            .c('username', {}).t(strophe.getNodeFromJid(this.jid))
+            .c('query', {xmlns: Strophe.NS.AUTH})
+            .c('username', {}).t(Strophe.getNodeFromJid(this.jid))
             .up()
             .c('password').t(this.pass);
 
-        if (!strophe.getResourceFromJid(this.jid)) {
+        if (!Strophe.getResourceFromJid(this.jid)) {
             // since the user has not supplied a resource, we pick
             // a default one here.  unlike other auth methods, the server
             // cannot do this for us.
-            this.jid = strophe.getBareJidFromJid(this.jid) + '/strophe';
+            this.jid = Strophe.getBareJidFromJid(this.jid) + '/strophe';
         }
-        iq.up().c('resource', {}).t(strophe.getResourceFromJid(this.jid));
+        iq.up().c('resource', {}).t(Strophe.getResourceFromJid(this.jid));
 
         this._addSysHandler(this._auth2_cb.bind(this), null,
                             null, null, "_auth_2");
@@ -2511,7 +2571,7 @@ strophe.Connection.prototype = {
     {
         if (this._sasl_data["server-signature"]) {
             var serverSignature;
-            var success = Base64.decode(strophe.getText(elem));
+            var success = Base64.decode(Strophe.getText(elem));
             var attribMatch = /([a-z]+)=([^,]+)(,|$)/;
             var matches = success.match(attribMatch);
             if (matches[1] == "v") {
@@ -2532,7 +2592,7 @@ strophe.Connection.prototype = {
             }
         }
 
-        strophe.info("SASL authentication succeeded.");
+        Strophe.info("SASL authentication succeeded.");
 
         if(this._sasl_mechanism)
           this._sasl_mechanism.onSuccess();
@@ -2558,7 +2618,7 @@ strophe.Connection.prototype = {
         }.bind(this), null, "stream:features", null, null));
         streamfeature_handlers.push(this._addSysHandler(function(elem) {
             wrapper.bind(this)(streamfeature_handlers, elem);
-        }.bind(this), strophe.NS.STREAM, "features", null, null));
+        }.bind(this), Strophe.NS.STREAM, "features", null, null));
 
         // we must send an xmpp:restart now
         this._sendRestart();
@@ -2594,20 +2654,20 @@ strophe.Connection.prototype = {
         }
 
         if (!this.do_bind) {
-            this._changeConnectStatus(strophe.Status.AUTHFAIL, null);
+            this._changeConnectStatus(Strophe.Status.AUTHFAIL, null);
             return false;
         } else {
             this._addSysHandler(this._sasl_bind_cb.bind(this), null, null,
                                 null, "_bind_auth_2");
 
-            var resource = strophe.getResourceFromJid(this.jid);
+            var resource = Strophe.getResourceFromJid(this.jid);
             if (resource) {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
-                          .c('bind', {xmlns: strophe.NS.BIND})
+                          .c('bind', {xmlns: Strophe.NS.BIND})
                           .c('resource', {}).t(resource).tree());
             } else {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
-                          .c('bind', {xmlns: strophe.NS.BIND})
+                          .c('bind', {xmlns: Strophe.NS.BIND})
                           .tree());
             }
         }
@@ -2627,12 +2687,12 @@ strophe.Connection.prototype = {
     _sasl_bind_cb: function (elem)
     {
         if (elem.getAttribute("type") == "error") {
-            strophe.info("SASL binding failed.");
+            Strophe.info("SASL binding failed.");
             var conflict = elem.getElementsByTagName("conflict"), condition;
             if (conflict.length > 0) {
                 condition = 'conflict';
             }
-            this._changeConnectStatus(strophe.Status.AUTHFAIL, condition);
+            this._changeConnectStatus(Strophe.Status.AUTHFAIL, condition);
             return false;
         }
 
@@ -2643,23 +2703,23 @@ strophe.Connection.prototype = {
             // Grab jid
             jidNode = bind[0].getElementsByTagName("jid");
             if (jidNode.length > 0) {
-                this.jid = strophe.getText(jidNode[0]);
+                this.jid = Strophe.getText(jidNode[0]);
 
                 if (this.do_session) {
                     this._addSysHandler(this._sasl_session_cb.bind(this),
                                         null, null, null, "_session_auth_2");
 
                     this.send($iq({type: "set", id: "_session_auth_2"})
-                                  .c('session', {xmlns: strophe.NS.SESSION})
+                                  .c('session', {xmlns: Strophe.NS.SESSION})
                                   .tree());
                 } else {
                     this.authenticated = true;
-                    this._changeConnectStatus(strophe.Status.CONNECTED, null);
+                    this._changeConnectStatus(Strophe.Status.CONNECTED, null);
                 }
             }
         } else {
-            strophe.info("SASL binding failed.");
-            this._changeConnectStatus(strophe.Status.AUTHFAIL, null);
+            Strophe.info("SASL binding failed.");
+            this._changeConnectStatus(Strophe.Status.AUTHFAIL, null);
             return false;
         }
     },
@@ -2680,10 +2740,10 @@ strophe.Connection.prototype = {
     {
         if (elem.getAttribute("type") == "result") {
             this.authenticated = true;
-            this._changeConnectStatus(strophe.Status.CONNECTED, null);
+            this._changeConnectStatus(Strophe.Status.CONNECTED, null);
         } else if (elem.getAttribute("type") == "error") {
-            strophe.info("Session creation failed.");
-            this._changeConnectStatus(strophe.Status.AUTHFAIL, null);
+            Strophe.info("Session creation failed.");
+            this._changeConnectStatus(Strophe.Status.AUTHFAIL, null);
             return false;
         }
 
@@ -2714,7 +2774,7 @@ strophe.Connection.prototype = {
 
         if(this._sasl_mechanism)
           this._sasl_mechanism.onFailure();
-        this._changeConnectStatus(strophe.Status.AUTHFAIL, null);
+        this._changeConnectStatus(Strophe.Status.AUTHFAIL, null);
         return false;
     },
     /* jshint unused:true */
@@ -2735,9 +2795,9 @@ strophe.Connection.prototype = {
     {
         if (elem.getAttribute("type") == "result") {
             this.authenticated = true;
-            this._changeConnectStatus(strophe.Status.CONNECTED, null);
+            this._changeConnectStatus(Strophe.Status.CONNECTED, null);
         } else if (elem.getAttribute("type") == "error") {
-            this._changeConnectStatus(strophe.Status.AUTHFAIL, null);
+            this._changeConnectStatus(Strophe.Status.AUTHFAIL, null);
             this.disconnect('authentication failed');
         }
 
@@ -2757,7 +2817,7 @@ strophe.Connection.prototype = {
      */
     _addSysTimedHandler: function (period, handler)
     {
-        var thand = new strophe.TimedHandler(period, handler);
+        var thand = new Strophe.TimedHandler(period, handler);
         thand.user = false;
         this.addTimeds.push(thand);
         return thand;
@@ -2779,7 +2839,7 @@ strophe.Connection.prototype = {
      */
     _addSysHandler: function (handler, ns, name, type, id)
     {
-        var hand = new strophe.Handler(handler, ns, name, type, id);
+        var hand = new Strophe.Handler(handler, ns, name, type, id);
         hand.user = false;
         this.addHandlers.push(hand);
         return hand;
@@ -2796,7 +2856,7 @@ strophe.Connection.prototype = {
      */
     _onDisconnectTimeout: function ()
     {
-        strophe.info("_onDisconnectTimeout was called");
+        Strophe.info("_onDisconnectTimeout was called");
 
         this._proto._onDisconnectTimeout();
 
@@ -2888,7 +2948,7 @@ strophe.Connection.prototype = {
  *  Returns:
  *    A new Strophe.SASLMechanism object.
  */
-strophe.SASLMechanism = function(name, isClientFirst, priority) {
+Strophe.SASLMechanism = function(name, isClientFirst, priority) {
   /** PrivateVariable: name
    *  Mechanism name.
    */
@@ -2917,7 +2977,7 @@ strophe.SASLMechanism = function(name, isClientFirst, priority) {
   this.priority = priority;
 };
 
-strophe.SASLMechanism.prototype = {
+Strophe.SASLMechanism.prototype = {
   /**
    *  Function: test
    *  Checks if mechanism able to run.
@@ -2999,28 +3059,28 @@ strophe.SASLMechanism.prototype = {
 /** PrivateConstructor: SASLAnonymous
  *  SASL Anonymous authentication.
  */
-strophe.SASLAnonymous = function() {};
+Strophe.SASLAnonymous = function() {};
 
-strophe.SASLAnonymous.prototype = new strophe.SASLMechanism("ANONYMOUS", false, 10);
+Strophe.SASLAnonymous.prototype = new Strophe.SASLMechanism("ANONYMOUS", false, 10);
 
-strophe.SASLAnonymous.test = function(connection) {
+Strophe.SASLAnonymous.test = function(connection) {
   return connection.authcid === null;
 };
 
-strophe.Connection.prototype.mechanisms[strophe.SASLAnonymous.prototype.name] = strophe.SASLAnonymous;
+Strophe.Connection.prototype.mechanisms[Strophe.SASLAnonymous.prototype.name] = Strophe.SASLAnonymous;
 
 /** PrivateConstructor: SASLPlain
  *  SASL Plain authentication.
  */
-strophe.SASLPlain = function() {};
+Strophe.SASLPlain = function() {};
 
-strophe.SASLPlain.prototype = new strophe.SASLMechanism("PLAIN", true, 20);
+Strophe.SASLPlain.prototype = new Strophe.SASLMechanism("PLAIN", true, 20);
 
-strophe.SASLPlain.test = function(connection) {
+Strophe.SASLPlain.test = function(connection) {
   return connection.authcid !== null;
 };
 
-strophe.SASLPlain.prototype.onChallenge = function(connection, challenge, callback) {
+Strophe.SASLPlain.prototype.onChallenge = function(connection, challenge, callback) {
   var auth_str = connection.authzid;
   auth_str = auth_str + "\u0000";
   auth_str = auth_str + connection.authcid;
@@ -3029,12 +3089,12 @@ strophe.SASLPlain.prototype.onChallenge = function(connection, challenge, callba
   callback(null, auth_str);
 };
 
-strophe.Connection.prototype.mechanisms[strophe.SASLPlain.prototype.name] = strophe.SASLPlain;
+Strophe.Connection.prototype.mechanisms[Strophe.SASLPlain.prototype.name] = Strophe.SASLPlain;
 
 /** PrivateConstructor: SASLSHA1
  *  SASL SCRAM SHA 1 authentication.
  */
-strophe.SASLSHA1 = function() {
+Strophe.SASLSHA1 = function() {
   this.firstChallengeDone = false;
 };
 
@@ -3052,13 +3112,13 @@ strophe.SASLSHA1 = function() {
  *
  */
 
-strophe.SASLSHA1.prototype = new strophe.SASLMechanism("SCRAM-SHA-1", true, 40);
+Strophe.SASLSHA1.prototype = new Strophe.SASLMechanism("SCRAM-SHA-1", true, 40);
 
-strophe.SASLSHA1.test = function(connection) {
+Strophe.SASLSHA1.test = function(connection) {
   return connection.authcid !== null;
 };
 
-strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+Strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
   var cnonce;
 
   if (!callback && test_cnonce.call) {
@@ -3127,7 +3187,7 @@ strophe.SASLSHA1.prototype.onChallenge = function(connection, challenge, test_cn
   }
 };
 
-strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectionPass, authMessage, salt, callback) {
+Strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectionPass, authMessage, salt, callback) {
   // no shared context between calls to the worker
   // creates SH1 namespace in the worker's context
   eval(depsCode); // jshint ignore:line
@@ -3161,17 +3221,17 @@ strophe.SASLSHA1.prototype.computeChallenge = function(depsCode, iter, connectio
 operative.hasWorkerSupport = operative.hasWorkerViaBlobSupport;
 
 // Wrap it in a worker
-strophe.SASLSHA1.prototype.computeChallenge = operative(strophe.SASLSHA1.prototype.computeChallenge);
-strophe.Connection.prototype.mechanisms[strophe.SASLSHA1.prototype.name] = strophe.SASLSHA1;
+Strophe.SASLSHA1.prototype.computeChallenge = operative(Strophe.SASLSHA1.prototype.computeChallenge);
+Strophe.Connection.prototype.mechanisms[Strophe.SASLSHA1.prototype.name] = Strophe.SASLSHA1;
 
 /** PrivateConstructor: SASLMD5
  *  SASL DIGEST MD5 authentication.
  */
-strophe.SASLMD5 = function() {};
+Strophe.SASLMD5 = function() {};
 
-strophe.SASLMD5.prototype = new strophe.SASLMechanism("DIGEST-MD5", false, 30);
+Strophe.SASLMD5.prototype = new Strophe.SASLMechanism("DIGEST-MD5", false, 30);
 
-strophe.SASLMD5.test = function(connection) {
+Strophe.SASLMD5.test = function(connection) {
   return connection.authcid !== null;
 };
 
@@ -3184,14 +3244,14 @@ strophe.SASLMD5.test = function(connection) {
  *  Returns:
  *    quoted string
  */
-strophe.SASLMD5.prototype._quote = function (str)
+Strophe.SASLMD5.prototype._quote = function (str)
   {
     return '"' + str.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
     //" end string workaround for emacs
   };
 
 
-strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
+Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cnonce, callback) {
   if (test_cnonce instanceof Function) {
     callback = test_cnonce;
     test_cnonce = null;
@@ -3257,55 +3317,16 @@ strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cno
   callback(null, responseText);
 };
 
-strophe.Connection.prototype.mechanisms[strophe.SASLMD5.prototype.name] = strophe.SASLMD5;
+Strophe.Connection.prototype.mechanisms[Strophe.SASLMD5.prototype.name] = Strophe.SASLMD5;
 
-/** Function: $build
- *  Create a Strophe.Builder.
- *  This is an alias for 'new Strophe.Builder(name, attrs)'.
- *
- *  Parameters:
- *    (String) name - The root element name.
- *    (Object) attrs - The attributes for the root element in object notation.
- *
- *  Returns:
- *    A new Strophe.Builder object.
- */
-strophe.$build = function $build(name, attrs) { return new strophe.Builder(name, attrs); }
-
-/** Function: $msg
- *  Create a Strophe.Builder with a <message/> element as the root.
- *
- *  Parmaeters:
- *    (Object) attrs - The <message/> element attributes in object notation.
- *
- *  Returns:
- *    A new Strophe.Builder object.
- */
-strophe.$msg = function $msg(attrs) { return new strophe.Builder("message", attrs); }
-
-/** Function: $iq
- *  Create a Strophe.Builder with an <iq/> element as the root.
- *
- *  Parameters:
- *    (Object) attrs - The <iq/> element attributes in object notation.
- *
- *  Returns:
- *    A new Strophe.Builder object.
- */
-strophe.$iq = function $iq(attrs) { return new strophe.Builder("iq", attrs); }
-
-/** Function: $pres
- *  Create a Strophe.Builder with a <presence/> element as the root.
- *
- *  Parameters:
- *    (Object) attrs - The <presence/> element attributes in object notation.
- *
- *  Returns:
- *    A new Strophe.Builder object.
- */
-strophe.$pres = function $pres(attrs) { return new strophe.Builder("presence", attrs); }
-
-require('./websocket')(strophe);
-require('./bosh')(strophe);
-
-module.exports = strophe;
+return {
+    Strophe:        Strophe,
+    $build:         $build,
+    $msg:           $msg,
+    $iq:            $iq,
+    $pres:          $pres,
+    SHA1:           SHA1,
+    Base64:         Base64,
+    MD5:            MD5,
+};
+}));

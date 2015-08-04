@@ -56,8 +56,6 @@
     "url": "https://raw.githubusercontent.com/strophe/strophejs/release-{version}/strophe.js"
   },
   "devDependencies": {
-    "browserify": "latest",
-    "watchify": "latest",
     "bower": "latest",
     "grunt": "~0.4",
     "grunt-cli": "~0.1.13",

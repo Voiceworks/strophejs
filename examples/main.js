@@ -2,7 +2,7 @@ config.baseUrl = '../';
 require.config(config);
 if (typeof(require) === 'function') {
     require(["jquery", "strophe", ], function($, wrapper) {
-        strophe = wrapper.Strophe;
+        Strophe = wrapper.Strophe;
 
         var BOSH_SERVICE = 'http://bosh.metajack.im:5280/xmpp-httpbind';
         var connection = null;

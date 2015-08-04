@@ -21,14 +21,10 @@ stamp-bower: stamp-npm bower.json
 	$(BOWER) install
 	touch stamp-bower
 
-build:
+$(STROPHE)::
+	make stamp-bower
 	@@echo "Building" $(STROPHE) "..."
-	browserify src/core.js -o strophe.js -s strophe
-	@@echo
-
-build-watch:
-	@@echo "Building" $(STROPHE) "..."
-	watchify src/core.js -o strophe.js -s strophe
+	$(GRUNT) concat
 	@@echo
 
 $(STROPHE_MIN)::
