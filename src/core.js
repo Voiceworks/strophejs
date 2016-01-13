@@ -7,8 +7,8 @@
 
 /* jshint undef: true, unused: true:, noarg: true, latedef: true */
 /*global define, document, window, setTimeout, clearTimeout, console, ActiveXObject, DOMParser */
-
-require('./base64')
+require('operative')
+var Base64 = require('./base64')
 require('./md5')
 require('./sha1')
 require('./polyfills')
@@ -2398,7 +2398,7 @@ strophe.Connection.prototype = {
         this._sasl_mechanism = new matched[i]();
         this._sasl_mechanism.onStart(this);
 
-        var request_auth_exchange = $build("auth", {
+        var request_auth_exchange = strophe.$build("auth", {
           xmlns: strophe.NS.SASL,
           mechanism: this._sasl_mechanism.name
         });
@@ -2445,7 +2445,7 @@ strophe.Connection.prototype = {
     _sasl_challenge_cb: function(elem) {
       var challenge = Base64.decode(strophe.getText(elem));
       this._sasl_mechanism.onChallenge(this, challenge, function(err, response) {
-        var stanza = $build('response', {
+        var stanza = strophe.$build('response', {
           xmlns: strophe.NS.SASL
         });
         if (response !== "") {

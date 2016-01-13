@@ -23,12 +23,17 @@ stamp-bower: stamp-npm bower.json
 
 build:
 	@@echo "Building" $(STROPHE) "..."
-	browserify src/core.js -o strophe.js -s strophe
+	browserify src/core.js -o strophe.js -s strophe --no-builtins --detect-globals=false --no-bf
+	@@echo
+
+build-debug:
+	@@echo "Building" $(STROPHE) "..."
+	browserify src/core.js -do strophe.js -s strophe --no-builtins --detect-globals=false --no-bf
 	@@echo
 
 build-watch:
 	@@echo "Building" $(STROPHE) "..."
-	watchify src/core.js -o strophe.js -s strophe
+	watchify src/core.js -o strophe.js -s strophe --no-builtins --detect-globals=false --no-bf
 	@@echo
 
 $(STROPHE_MIN)::

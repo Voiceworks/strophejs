@@ -100,6 +100,10 @@ module.exports = function(grunt){
             zip: {
                 command: 'zip -qr strophejs-<%= pkg.version %>.zip strophejs-<%= pkg.version %>',
                 options: { failOnError: true }
+            },
+            build: {
+                command: 'make build',
+                options: { failOnError: true }
             }
         },
 
@@ -148,7 +152,7 @@ module.exports = function(grunt){
     grunt.loadNpmTasks('grunt-contrib-qunit');
 
     grunt.registerTask("default", ["jshint", "min"]);
-    grunt.registerTask("min", ["concat", "uglify"]);
+    grunt.registerTask("min", ["shell:build", "uglify"]);
     grunt.registerTask("prepare-release", ["copy:prepare-release"]);
     grunt.registerTask("doc", ["concat", "copy:prepare-doc", "mkdir:prepare-doc", "natural_docs"]);
     grunt.registerTask("release", ["default", "doc", "copy:prepare-release", "shell:tar", "shell:zip"]);
