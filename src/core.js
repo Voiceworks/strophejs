@@ -2073,7 +2073,7 @@ strophe.Connection.prototype = {
             var pres = false;
             this.disconnecting = true;
             if (this.authenticated) {
-                pres = $pres({
+                pres = strophe.$pres({
                     xmlns: strophe.NS.CLIENT,
                     type: 'unavailable'
                 });
@@ -2430,7 +2430,7 @@ strophe.Connection.prototype = {
           this._addSysHandler(this._auth1_cb.bind(this), null, null,
                               null, "_auth_1");
 
-          this.send($iq({
+          this.send(strophe.$iq({
             type: "get",
             to: this.domain,
             id: "_auth_1"
@@ -2475,7 +2475,7 @@ strophe.Connection.prototype = {
     _auth1_cb: function (elem)
     {
         // build plaintext auth iq
-        var iq = $iq({type: "set", id: "_auth_2"})
+        var iq = strophe.$iq({type: "set", id: "_auth_2"})
             .c('query', {xmlns: strophe.NS.AUTH})
             .c('username', {}).t(strophe.getNodeFromJid(this.jid))
             .up()
@@ -2602,11 +2602,11 @@ strophe.Connection.prototype = {
 
             var resource = strophe.getResourceFromJid(this.jid);
             if (resource) {
-                this.send($iq({type: "set", id: "_bind_auth_2"})
+                this.send(strophe.$iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: strophe.NS.BIND})
                           .c('resource', {}).t(resource).tree());
             } else {
-                this.send($iq({type: "set", id: "_bind_auth_2"})
+                this.send(strophe.$iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: strophe.NS.BIND})
                           .tree());
             }
@@ -2649,7 +2649,7 @@ strophe.Connection.prototype = {
                     this._addSysHandler(this._sasl_session_cb.bind(this),
                                         null, null, null, "_session_auth_2");
 
-                    this.send($iq({type: "set", id: "_session_auth_2"})
+                    this.send(strophe.$iq({type: "set", id: "_session_auth_2"})
                                   .c('session', {xmlns: strophe.NS.SESSION})
                                   .tree());
                 } else {
