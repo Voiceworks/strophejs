@@ -412,7 +412,8 @@ Strophe.Websocket.prototype = {
                     rawStanza = Strophe.serialize(stanza);
                     this._conn.xmlOutput(stanza);
                     this._conn.rawOutput(rawStanza);
-                    this.socket.send(rawStanza);
+                    if(this.socket)
+                        this.socket.send(rawStanza);
                 }
             }
             this._conn._data = [];
