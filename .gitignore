@@ -4,6 +4,7 @@ version.txt
 node_modules
 bower_components
 strophejs-*/
+.idea/
 ndproj
 doc
 .taperc
