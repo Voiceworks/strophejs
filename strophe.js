@@ -525,7 +525,7 @@ Strophe = {
      *  The version of the Strophe library. Unreleased builds will have
      *  a version of head-HASH where HASH is a partial revision.
      */
-    VERSION: "1.2.2",
+    VERSION: "1.2.3",
 
     /** Constants: XMPP Namespace Constants
      *  Common namespace constants from the XMPP RFCs and XEPs.
@@ -2123,7 +2123,8 @@ Strophe.Connection.prototype = {
         /** Variable: authzid
          *  Authorization identity.
          */
-        this.authzid = Strophe.getBareJidFromJid(this.jid);
+        // Changed because of warnings from XMPP server OXM-1084
+        this.authzid = this.jid; // Strophe.getBareJidFromJid(this.jid);
         /** Variable: authcid
          *  Authentication identity (User name).
          */

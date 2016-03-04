@@ -1689,7 +1689,8 @@ Strophe.Connection.prototype = {
         /** Variable: authzid
          *  Authorization identity.
          */
-        this.authzid = Strophe.getBareJidFromJid(this.jid);
+        // Changed because of warnings from XMPP server OXM-1084
+        this.authzid = this.jid; // Strophe.getBareJidFromJid(this.jid);
         /** Variable: authcid
          *  Authentication identity (User name).
          */
