@@ -4779,7 +4779,9 @@ Strophe.Websocket.prototype = {
 
         // close the connection on stream_error
         this._conn._changeConnectStatus(connectstatus, condition);
-        this._conn._doDisconnect();
+        if (condition) {
+            this._conn._doDisconnect();
+        }
         return true;
     },
 
